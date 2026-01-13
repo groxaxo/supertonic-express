@@ -45,7 +45,7 @@ def parse_args():
         type=str,
         nargs="+",
         default=["M1"],
-        help="Voice style name(s) (e.g., M1, F1). Can specify multiple for batch processing",
+        help="Voice style name (e.g., M1, F1). Note: When using batch mode, the first voice will be used for all texts.",
     )
     parser.add_argument(
         "--text",

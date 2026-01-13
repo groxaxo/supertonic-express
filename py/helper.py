@@ -36,8 +36,15 @@ class SupertonicTTS:
         self.model_path = model_path
         self.sample_rate = self.SAMPLE_RATE
         
-        # Initialize tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
+        # Initialize tokenizer with error handling
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to load tokenizer from {self.model_path}. "
+                "Make sure the model files are downloaded correctly. "
+                f"Original error: {e}"
+            )
 
         # Set up ONNX Runtime providers
         if use_gpu:
@@ -77,6 +84,15 @@ class SupertonicTTS:
             raise ValueError(f"Voice '{voice}' not found at {voice_path}.")
 
         style_vec = np.fromfile(voice_path, dtype=np.float32)
+        
+        # Validate the size
+        expected_size = self.STYLE_DIM
+        if style_vec.size != expected_size:
+            raise ValueError(
+                f"Voice file '{voice}' has incorrect size. "
+                f"Expected {expected_size} values, got {style_vec.size}"
+            )
+        
         return style_vec.reshape(1, -1, self.STYLE_DIM)
 
     def generate(
@@ -155,7 +171,9 @@ class SupertonicTTS:
         # 7. Post-process: Trim padding and return list of arrays
         results = []
         for i, length in enumerate(latent_mask.sum(axis=1) * self.LATENT_SIZE):
-            results.append(waveforms[i, :length])
+            # Cast to int to avoid indexing issues
+            length_int = int(length)
+            results.append(waveforms[i, :length_int])
 
         return results
 
