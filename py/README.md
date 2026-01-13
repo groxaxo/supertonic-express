@@ -1,4 +1,65 @@
-# TTS ONNX Inference Examples
+# Python - TTS ONNX Inference & FastAPI Server
+
+This directory contains Python examples for Supertonic TTS inference and an **OpenAI-compatible FastAPI server**.
+
+## 🚀 FastAPI Server (NEW!)
+
+We now provide an **OpenAI-compatible FastAPI server** for easy integration!
+
+### Features
+
+- ✅ **OpenAI-Compatible API** - Drop-in replacement for OpenAI TTS
+- ✅ **Streaming Support** - Real-time audio streaming  
+- ✅ **Multiple Formats** - MP3, Opus, AAC, FLAC, WAV, PCM
+- ✅ **Open-WebUI Compatible** - Works out of the box with Open-WebUI
+- ✅ **Docker Support** - CPU and GPU Docker images available
+
+### Quick Start (API Server)
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the server
+./start_server.sh
+```
+
+Server will be available at `http://localhost:8880`
+
+**See [README_API.md](README_API.md) for complete API documentation.**
+
+### OpenAI Client Example
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:8880/v1",
+    api_key="not-needed"
+)
+
+response = client.audio.speech.create(
+    model="supertonic",
+    voice="M1",
+    input="Hello, this is Supertonic!"
+)
+
+response.stream_to_file("output.mp3")
+```
+
+### Docker Deployment
+
+```bash
+# CPU Version
+cd ../docker/cpu && docker-compose up -d
+
+# GPU Version  
+cd ../docker/gpu && docker-compose up -d
+```
+
+---
+
+## 📝 TTS ONNX Inference Examples
 
 This guide provides examples for running TTS inference using `example_onnx.py`.
 
