@@ -56,12 +56,23 @@ https://github.com/user-attachments/assets/64980e58-ad91-423a-9623-78c2ffc13680
 - **⚙️ Highly Configurable**: Adjust inference steps, batch processing, and other parameters to match your specific needs
 - **🧩 Flexible Deployment**: Deploy seamlessly across servers, browsers, and edge devices with multiple runtime backends.
 
-## Language Support
+## Implementation Languages
 
-This repository provides a **Python implementation** using ONNX Runtime for on-device inference.
+This repository provides implementations in multiple languages:
+
+### 🐍 Python with ONNX Runtime
+Full-featured implementation with FastAPI server, ideal for server deployments.
+
+**Location:** `/py` directory  
+**Features:** ONNX Runtime, FastAPI REST API, OpenAI compatibility, Docker support
+
+### ⚡ JavaScript/Node.js with Transformers.js
+Pure JavaScript implementation optimized for Intel CPUs, perfect for Node.js applications and browsers.
+
+**Location:** `/js` directory  
+**Features:** Transformers.js, Intel CPU optimizations, browser support, zero Python dependencies
 
 For other language implementations, see:
-- [Transformers.js](https://github.com/huggingface/transformers.js) - JavaScript/TypeScript library with browser and Node.js support
 - [Original Supertonic Repository](https://github.com/supertone-inc/supertonic) - Multi-language implementations (C++, Java, Swift, etc.)
 
 ### 🚀 Python FastAPI Server
@@ -123,6 +134,12 @@ cd supertonic-express
 
 ### Prerequisites
 
+**For JavaScript/Node.js implementation:**
+- Node.js >= 18.0.0
+- No model download required (automatically handled by Transformers.js)
+
+**For Python implementation:**
+
 Download the ONNX model from Hugging Face:
 
 ```bash
@@ -132,6 +149,13 @@ python -c "from huggingface_hub import snapshot_download; snapshot_download('onn
 ```
 
 ### Quick Start
+
+**JavaScript/Node.js Example** ([Details](js/))
+```bash
+cd js
+npm install
+npm run example:basic
+```
 
 **Python Example** ([Details](py/))
 ```bash
@@ -145,6 +169,34 @@ python example_onnx.py --onnx-dir ../assets
 cd py
 ./start_server.sh
 ```
+
+### JavaScript/Node.js Usage
+
+The JavaScript implementation uses Transformers.js and includes Intel CPU optimizations:
+
+```javascript
+import { SupertonicTTS } from './index.js';
+
+// Create and initialize TTS
+const tts = new SupertonicTTS();
+await tts.initialize();
+
+// Generate speech
+await tts.generateAndSave('This is really cool!', 'output.wav', {
+  language: 'en',
+  speaker_embeddings: 'https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX/resolve/main/voices/M1.bin',
+  num_inference_steps: 5,
+  speed: 1.05,
+});
+```
+
+**CPU Optimization Settings:**
+The JavaScript implementation includes automatic CPU optimizations for Intel processors:
+- SIMD instructions enabled (AVX2, AVX-512)
+- Automatic thread count optimization (75% of CPU cores)
+- Configurable via `OMP_NUM_THREADS` environment variable
+
+See [js/README.md](js/README.md) for detailed documentation and optimization guides.
 
 
 ### Technical Details
