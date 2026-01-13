@@ -49,27 +49,33 @@ async def create_speech(request: OpenAISpeechRequest, client_request: Request):
             # Streaming response
             async def audio_stream():
                 try:
-                    async for chunk in tts_service.generate_audio_stream(
+                    # Generate complete audio first (convert to target format once)
+                    audio_data = await tts_service.generate_audio(
                         text=request.input,
                         voice=request.voice,
                         speed=request.speed,
                         lang_code=request.lang_code,
                         total_steps=request.total_steps,
-                    ):
+                    )
+                    
+                    # Convert to requested format once before streaming
+                    if request.response_format != "wav":
+                        audio_data = convert_audio(
+                            audio_data,
+                            request.response_format,
+                            tts_service.sample_rate,
+                        )
+                    
+                    # Stream the converted audio in chunks
+                    chunk_size = 8192
+                    for i in range(0, len(audio_data), chunk_size):
                         # Check if client disconnected
                         if await client_request.is_disconnected():
                             logger.info("Client disconnected, stopping stream")
                             break
                         
-                        # Convert if not WAV
-                        if request.response_format != "wav":
-                            chunk = convert_audio(
-                                chunk,
-                                request.response_format,
-                                tts_service.sample_rate,
-                            )
+                        yield audio_data[i : i + chunk_size]
                         
-                        yield chunk
                 except Exception as e:
                     logger.error(f"Streaming error: {e}")
                     raise

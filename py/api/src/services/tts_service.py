@@ -10,16 +10,22 @@ import numpy as np
 import soundfile as sf
 from loguru import logger
 
-# Import from helper
-import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../"))
-from helper import (
-    load_text_to_speech,
-    load_voice_style,
-    Style,
-    TextToSpeech,
-    chunk_text,
-)
+# Import from parent package helper
+from pathlib import Path
+import importlib.util
+
+# Load helper module from the parent py directory
+_helper_path = Path(__file__).parent.parent.parent.parent / "helper.py"
+spec = importlib.util.spec_from_file_location("helper", _helper_path)
+helper = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(helper)
+
+# Import needed functions from helper
+load_text_to_speech = helper.load_text_to_speech
+load_voice_style = helper.load_voice_style
+Style = helper.Style
+TextToSpeech = helper.TextToSpeech
+chunk_text = helper.chunk_text
 
 from ..core.config import settings
 
@@ -122,11 +128,16 @@ class TTSService:
         speed: float = 1.0,
         lang_code: Optional[str] = None,
         total_steps: Optional[int] = None,
-        chunk_size: int = 4096,
+        chunk_size: int = 8192,
     ) -> AsyncGenerator[bytes, None]:
-        """Generate audio in streaming chunks"""
-        # For now, generate complete audio and stream it in chunks
-        # A more advanced implementation could stream as the model generates
+        """
+        Generate audio in streaming chunks.
+        
+        Note: This implementation generates complete audio and streams it in chunks.
+        For very long texts, consider using the chunk_text functionality to split
+        text into smaller segments and generate them sequentially.
+        """
+        # Generate complete audio
         audio_data = await self.generate_audio(
             text, voice, speed, lang_code, total_steps
         )
@@ -134,7 +145,7 @@ class TTSService:
         # Stream the audio in chunks
         for i in range(0, len(audio_data), chunk_size):
             yield audio_data[i : i + chunk_size]
-            # Small delay to simulate streaming
+            # Small delay to simulate streaming and allow event loop to process
             await asyncio.sleep(0.001)
 
     @property

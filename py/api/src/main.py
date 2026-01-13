@@ -96,7 +96,7 @@ async def health_check():
     try:
         tts_service = await get_tts_service()
         model_loaded = tts_service._initialized
-    except:
+    except Exception:
         model_loaded = False
     
     return HealthResponse(
