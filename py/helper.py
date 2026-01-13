@@ -1,374 +1,331 @@
-import json
+"""
+SupertonicTTS ONNX Runtime implementation using onnx-community/Supertonic-TTS-2-ONNX model.
+Based on the official model card implementation.
+"""
+
 import os
 import time
 from contextlib import contextmanager
 from typing import Optional
-from unicodedata import normalize
+import re
 
 import numpy as np
 import onnxruntime as ort
-
-import re
-
-AVAILABLE_LANGS = ["en", "ko", "es", "pt", "fr"]
+from transformers import AutoTokenizer
 
 
-class UnicodeProcessor:
-    def __init__(self, unicode_indexer_path: str):
-        with open(unicode_indexer_path, "r") as f:
-            self.indexer = json.load(f)
+class SupertonicTTS:
+    """SupertonicTTS class for text-to-speech generation using ONNX models."""
+    
+    SAMPLE_RATE = 44100
+    CHUNK_COMPRESS_FACTOR = 6
+    BASE_CHUNK_SIZE = 512
+    LATENT_DIM = 24
+    STYLE_DIM = 128
+    LATENT_SIZE = BASE_CHUNK_SIZE * CHUNK_COMPRESS_FACTOR
+    LANGUAGES = ["en", "ko", "es", "pt", "fr"]
 
-    def _preprocess_text(self, text: str, lang: str) -> str:
-        # TODO: Need advanced normalizer for better performance
-        text = normalize("NFKD", text)
+    def __init__(self, model_path: str, use_gpu: bool = False):
+        """
+        Initialize SupertonicTTS model.
+        
+        Args:
+            model_path: Path to the model directory containing ONNX models
+            use_gpu: Whether to use GPU for inference (default: False)
+        """
+        self.model_path = model_path
+        self.sample_rate = self.SAMPLE_RATE
+        
+        # Initialize tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
 
-        # Remove emojis (wide Unicode range)
-        emoji_pattern = re.compile(
-            "[\U0001f600-\U0001f64f"  # emoticons
-            "\U0001f300-\U0001f5ff"  # symbols & pictographs
-            "\U0001f680-\U0001f6ff"  # transport & map symbols
-            "\U0001f700-\U0001f77f"
-            "\U0001f780-\U0001f7ff"
-            "\U0001f800-\U0001f8ff"
-            "\U0001f900-\U0001f9ff"
-            "\U0001fa00-\U0001fa6f"
-            "\U0001fa70-\U0001faff"
-            "\u2600-\u26ff"
-            "\u2700-\u27bf"
-            "\U0001f1e6-\U0001f1ff]+",
-            flags=re.UNICODE,
+        # Set up ONNX Runtime providers
+        if use_gpu:
+            providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+            print("Using GPU for inference (if available)")
+        else:
+            providers = ["CPUExecutionProvider"]
+            print("Using CPU for inference")
+
+        # Load ONNX sessions
+        onnx_dir = os.path.join(self.model_path, "onnx")
+        self.text_encoder = ort.InferenceSession(
+            os.path.join(onnx_dir, "text_encoder.onnx"),
+            providers=providers
         )
-        text = emoji_pattern.sub("", text)
+        self.latent_denoiser = ort.InferenceSession(
+            os.path.join(onnx_dir, "latent_denoiser.onnx"),
+            providers=providers
+        )
+        self.voice_decoder = ort.InferenceSession(
+            os.path.join(onnx_dir, "voice_decoder.onnx"),
+            providers=providers
+        )
 
-        # Replace various dashes and symbols
-        replacements = {
-            "–": "-",
-            "‑": "-",
-            "—": "-",
-            "_": " ",
-            "\u201c": '"',  # left double quote "
-            "\u201d": '"',  # right double quote "
-            "\u2018": "'",  # left single quote '
-            "\u2019": "'",  # right single quote '
-            "´": "'",
-            "`": "'",
-            "[": " ",
-            "]": " ",
-            "|": " ",
-            "/": " ",
-            "#": " ",
-            "→": " ",
-            "←": " ",
-        }
-        for k, v in replacements.items():
-            text = text.replace(k, v)
+    def _load_style(self, voice: str) -> np.ndarray:
+        """
+        Load voice style from .bin file.
+        
+        Args:
+            voice: Voice name (e.g., 'M1', 'F1')
+            
+        Returns:
+            Style vector as numpy array with shape (1, 1, STYLE_DIM)
+        """
+        voice_path = os.path.join(self.model_path, "voices", f"{voice}.bin")
+        if not os.path.exists(voice_path):
+            raise ValueError(f"Voice '{voice}' not found at {voice_path}.")
 
-        # Remove special symbols
-        text = re.sub(r"[♥☆♡©\\]", "", text)
+        style_vec = np.fromfile(voice_path, dtype=np.float32)
+        return style_vec.reshape(1, -1, self.STYLE_DIM)
 
-        # Replace known expressions
-        expr_replacements = {
-            "@": " at ",
-            "e.g.,": "for example, ",
-            "i.e.,": "that is, ",
-        }
-        for k, v in expr_replacements.items():
-            text = text.replace(k, v)
-
-        # Fix spacing around punctuation
-        text = re.sub(r" ,", ",", text)
-        text = re.sub(r" \.", ".", text)
-        text = re.sub(r" !", "!", text)
-        text = re.sub(r" \?", "?", text)
-        text = re.sub(r" ;", ";", text)
-        text = re.sub(r" :", ":", text)
-        text = re.sub(r" '", "'", text)
-
-        # Remove duplicate quotes
-        while '""' in text:
-            text = text.replace('""', '"')
-        while "''" in text:
-            text = text.replace("''", "'")
-        while "``" in text:
-            text = text.replace("``", "`")
-
-        # Remove extra spaces
-        text = re.sub(r"\s+", " ", text).strip()
-
-        # If text doesn't end with punctuation, quotes, or closing brackets, add a period
-        if not re.search(r"[.!?;:,'\"')\]}…。」』】〉》›»]$", text):
-            text += "."
-
-        if lang not in AVAILABLE_LANGS:
-            raise ValueError(f"Invalid language: {lang}")
-        text = f"<{lang}>" + text + f"</{lang}>"
-        return text
-
-    def _get_text_mask(self, text_ids_lengths: np.ndarray) -> np.ndarray:
-        text_mask = length_to_mask(text_ids_lengths)
-        return text_mask
-
-    def _text_to_unicode_values(self, text: str) -> np.ndarray:
-        unicode_values = np.array(
-            [ord(char) for char in text], dtype=np.uint16
-        )  # 2 bytes
-        return unicode_values
-
-    def __call__(
-        self, text_list: list[str], lang_list: list[str]
-    ) -> tuple[np.ndarray, np.ndarray]:
-        text_list = [
-            self._preprocess_text(t, lang) for t, lang in zip(text_list, lang_list)
-        ]
-        text_ids_lengths = np.array([len(text) for text in text_list], dtype=np.int64)
-        text_ids = np.zeros((len(text_list), text_ids_lengths.max()), dtype=np.int64)
-        for i, text in enumerate(text_list):
-            unicode_vals = self._text_to_unicode_values(text)
-            text_ids[i, : len(unicode_vals)] = np.array(
-                [self.indexer[val] for val in unicode_vals], dtype=np.int64
+    def generate(
+        self,
+        text: list[str],
+        *,
+        voice: str = "M1",
+        speed: float = 1.0,
+        steps: int = 5,
+        language: str = "en"
+    ) -> list[np.ndarray]:
+        """
+        Generate audio from text.
+        
+        Args:
+            text: List of text strings to synthesize
+            voice: Voice style to use (default: "M1")
+            speed: Speech speed multiplier (default: 1.0)
+            steps: Number of inference steps (default: 5, higher = better quality)
+            language: Language code (default: "en")
+            
+        Returns:
+            List of audio arrays (one per input text)
+        """
+        if language not in self.LANGUAGES:
+            raise ValueError(
+                f"Language '{language}' not supported. Choose from {self.LANGUAGES}."
             )
-        text_mask = self._get_text_mask(text_ids_lengths)
-        return text_ids, text_mask
 
+        # 1. Prepare Text Inputs
+        text = [f"<{language}>{t}</{language}>" for t in text]
+        inputs = self.tokenizer(text, return_tensors="np", padding=True, truncation=True)
+        input_ids = inputs["input_ids"]
+        attn_mask = inputs["attention_mask"]
+        batch_size = input_ids.shape[0]
 
-class Style:
-    def __init__(self, style_ttl_onnx: np.ndarray, style_dp_onnx: np.ndarray):
-        self.ttl = style_ttl_onnx
-        self.dp = style_dp_onnx
+        # 2. Prepare Style
+        style = self._load_style(voice).repeat(batch_size, axis=0)
 
-
-class TextToSpeech:
-    def __init__(
-        self,
-        cfgs: dict,
-        text_processor: UnicodeProcessor,
-        dp_ort: ort.InferenceSession,
-        text_enc_ort: ort.InferenceSession,
-        vector_est_ort: ort.InferenceSession,
-        vocoder_ort: ort.InferenceSession,
-    ):
-        self.cfgs = cfgs
-        self.text_processor = text_processor
-        self.dp_ort = dp_ort
-        self.text_enc_ort = text_enc_ort
-        self.vector_est_ort = vector_est_ort
-        self.vocoder_ort = vocoder_ort
-        self.sample_rate = cfgs["ae"]["sample_rate"]
-        self.base_chunk_size = cfgs["ae"]["base_chunk_size"]
-        self.chunk_compress_factor = cfgs["ttl"]["chunk_compress_factor"]
-        self.ldim = cfgs["ttl"]["latent_dim"]
-
-    def sample_noisy_latent(
-        self, duration: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
-        bsz = len(duration)
-        wav_len_max = duration.max() * self.sample_rate
-        wav_lengths = (duration * self.sample_rate).astype(np.int64)
-        chunk_size = self.base_chunk_size * self.chunk_compress_factor
-        latent_len = ((wav_len_max + chunk_size - 1) / chunk_size).astype(np.int32)
-        latent_dim = self.ldim * self.chunk_compress_factor
-        noisy_latent = np.random.randn(bsz, latent_dim, latent_len).astype(np.float32)
-        latent_mask = get_latent_mask(
-            wav_lengths, self.base_chunk_size, self.chunk_compress_factor
-        )
-        noisy_latent = noisy_latent * latent_mask
-        return noisy_latent, latent_mask
-
-    def _infer(
-        self,
-        text_list: list[str],
-        lang_list: list[str],
-        style: Style,
-        total_step: int,
-        speed: float = 1.05,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        assert (
-            len(text_list) == style.ttl.shape[0]
-        ), "Number of texts must match number of style vectors"
-        bsz = len(text_list)
-        text_ids, text_mask = self.text_processor(text_list, lang_list)
-        dur_onnx, *_ = self.dp_ort.run(
-            None, {"text_ids": text_ids, "style_dp": style.dp, "text_mask": text_mask}
-        )
-        dur_onnx = dur_onnx / speed
-        text_emb_onnx, *_ = self.text_enc_ort.run(
+        # 3. Text Encoding
+        last_hidden_state, raw_durations = self.text_encoder.run(
             None,
-            {"text_ids": text_ids, "style_ttl": style.ttl, "text_mask": text_mask},
-        )  # dur_onnx: [bsz]
-        xt, latent_mask = self.sample_noisy_latent(dur_onnx)
-        total_step_np = np.array([total_step] * bsz, dtype=np.float32)
-        for step in range(total_step):
-            current_step = np.array([step] * bsz, dtype=np.float32)
-            xt, *_ = self.vector_est_ort.run(
+            {"input_ids": input_ids, "attention_mask": attn_mask, "style": style}
+        )
+        durations = (raw_durations / speed * self.SAMPLE_RATE).astype(np.int64)
+
+        # 4. Latent Preparation
+        latent_lengths = (durations + self.LATENT_SIZE - 1) // self.LATENT_SIZE
+        max_len = latent_lengths.max()
+        latent_mask = (np.arange(max_len) < latent_lengths[:, None]).astype(np.int64)
+        latents = np.random.randn(
+            batch_size, self.LATENT_DIM * self.CHUNK_COMPRESS_FACTOR, max_len
+        ).astype(np.float32)
+        latents *= latent_mask[:, None, :]
+
+        # 5. Denoising Loop
+        num_inference_steps = np.full(batch_size, steps, dtype=np.float32)
+        for step in range(steps):
+            timestep = np.full(batch_size, step, dtype=np.float32)
+            latents = self.latent_denoiser.run(
                 None,
                 {
-                    "noisy_latent": xt,
-                    "text_emb": text_emb_onnx,
-                    "style_ttl": style.ttl,
-                    "text_mask": text_mask,
+                    "noisy_latents": latents,
                     "latent_mask": latent_mask,
-                    "current_step": current_step,
-                    "total_step": total_step_np,
+                    "style": style,
+                    "encoder_outputs": last_hidden_state,
+                    "attention_mask": attn_mask,
+                    "timestep": timestep,
+                    "num_inference_steps": num_inference_steps,
                 },
-            )
-        wav, *_ = self.vocoder_ort.run(None, {"latent": xt})
-        return wav, dur_onnx
+            )[0]
+
+        # 6. Decode Latents to Audio
+        waveforms = self.voice_decoder.run(None, {"latents": latents})[0]
+
+        # 7. Post-process: Trim padding and return list of arrays
+        results = []
+        for i, length in enumerate(latent_mask.sum(axis=1) * self.LATENT_SIZE):
+            results.append(waveforms[i, :length])
+
+        return results
 
     def __call__(
         self,
         text: str,
         lang: str,
-        style: Style,
+        voice: str,
         total_step: int,
-        speed: float = 1.05,
-        silence_duration: float = 0.3,
+        speed: float = 1.0,
     ) -> tuple[np.ndarray, np.ndarray]:
-        assert (
-            style.ttl.shape[0] == 1
-        ), "Single speaker text to speech only supports single style"
+        """
+        Legacy interface for compatibility with existing API.
+        
+        Args:
+            text: Text to synthesize
+            lang: Language code
+            voice: Voice name
+            total_step: Number of inference steps
+            speed: Speech speed multiplier
+            
+        Returns:
+            Tuple of (waveform, duration)
+        """
+        # Split long text into chunks
         max_len = 120 if lang == "ko" else 300
-        text_list = chunk_text(text, max_len=max_len)
-        wav_cat = None
-        dur_cat = None
-        for text in text_list:
-            wav, dur_onnx = self._infer([text], [lang], style, total_step, speed)
-            if wav_cat is None:
-                wav_cat = wav
-                dur_cat = dur_onnx
-            else:
-                silence = np.zeros(
-                    (1, int(silence_duration * self.sample_rate)), dtype=np.float32
-                )
-                wav_cat = np.concatenate([wav_cat, silence, wav], axis=1)
-                dur_cat += dur_onnx + silence_duration
-        return wav_cat, dur_cat
+        text_chunks = chunk_text(text, max_len=max_len)
+        
+        wav_list = []
+        total_duration = 0.0
+        
+        for chunk in text_chunks:
+            results = self.generate(
+                [chunk],
+                voice=voice,
+                speed=speed,
+                steps=total_step,
+                language=lang
+            )
+            wav_list.append(results[0])
+            total_duration += len(results[0]) / self.SAMPLE_RATE
+            
+            # Add silence between chunks
+            if len(text_chunks) > 1:
+                silence = np.zeros(int(0.3 * self.SAMPLE_RATE), dtype=np.float32)
+                wav_list.append(silence)
+                total_duration += 0.3
+        
+        # Concatenate all chunks
+        wav_combined = np.concatenate(wav_list)
+        
+        # Return in format expected by API: (1, T) and duration as array
+        return wav_combined.reshape(1, -1), np.array([total_duration])
 
     def batch(
         self,
         text_list: list[str],
         lang_list: list[str],
-        style: Style,
+        voice: str,
         total_step: int,
-        speed: float = 1.05,
+        speed: float = 1.0,
     ) -> tuple[np.ndarray, np.ndarray]:
-        return self._infer(text_list, lang_list, style, total_step, speed)
+        """
+        Batch processing for multiple texts.
+        
+        Args:
+            text_list: List of texts to synthesize
+            lang_list: List of language codes (one per text)
+            voice: Voice name
+            total_step: Number of inference steps
+            speed: Speech speed multiplier
+            
+        Returns:
+            Tuple of (waveforms, durations)
+        """
+        # For simplicity, use the same language for all (first in list)
+        # The new model processes batches internally
+        if len(set(lang_list)) > 1:
+            # If different languages, process one by one
+            wavs = []
+            durs = []
+            for text, lang in zip(text_list, lang_list):
+                wav, dur = self(text, lang, voice, total_step, speed)
+                wavs.append(wav)
+                durs.append(dur)
+            return np.concatenate(wavs, axis=0), np.concatenate(durs, axis=0)
+        
+        # Same language for all - use batch generation
+        results = self.generate(
+            text_list,
+            voice=voice,
+            speed=speed,
+            steps=total_step,
+            language=lang_list[0]
+        )
+        
+        # Convert to expected format
+        max_len = max(len(r) for r in results)
+        wavs = np.zeros((len(results), max_len), dtype=np.float32)
+        durs = np.zeros(len(results), dtype=np.float32)
+        
+        for i, wav in enumerate(results):
+            wavs[i, :len(wav)] = wav
+            durs[i] = len(wav) / self.SAMPLE_RATE
+            
+        return wavs, durs
 
 
-def length_to_mask(lengths: np.ndarray, max_len: Optional[int] = None) -> np.ndarray:
+# Backwards compatibility functions for the API
+
+def load_text_to_speech(model_path: str, use_gpu: bool = False) -> SupertonicTTS:
     """
-    Convert lengths to binary mask.
-
+    Load the text-to-speech model.
+    
     Args:
-        lengths: (B,)
-        max_len: int
-
+        model_path: Path to model directory
+        use_gpu: Whether to use GPU
+        
     Returns:
-        mask: (B, 1, max_len)
+        SupertonicTTS instance
     """
-    max_len = max_len or lengths.max()
-    ids = np.arange(0, max_len)
-    mask = (ids < np.expand_dims(lengths, axis=1)).astype(np.float32)
-    return mask.reshape(-1, 1, max_len)
+    return SupertonicTTS(model_path, use_gpu)
 
 
-def get_latent_mask(
-    wav_lengths: np.ndarray, base_chunk_size: int, chunk_compress_factor: int
-) -> np.ndarray:
-    latent_size = base_chunk_size * chunk_compress_factor
-    latent_lengths = (wav_lengths + latent_size - 1) // latent_size
-    latent_mask = length_to_mask(latent_lengths)
-    return latent_mask
-
-
-def load_onnx(
-    onnx_path: str, opts: ort.SessionOptions, providers: list[str]
-) -> ort.InferenceSession:
-    return ort.InferenceSession(onnx_path, sess_options=opts, providers=providers)
-
-
-def load_onnx_all(
-    onnx_dir: str, opts: ort.SessionOptions, providers: list[str]
-) -> tuple[
-    ort.InferenceSession,
-    ort.InferenceSession,
-    ort.InferenceSession,
-    ort.InferenceSession,
-]:
-    dp_onnx_path = os.path.join(onnx_dir, "duration_predictor.onnx")
-    text_enc_onnx_path = os.path.join(onnx_dir, "text_encoder.onnx")
-    vector_est_onnx_path = os.path.join(onnx_dir, "vector_estimator.onnx")
-    vocoder_onnx_path = os.path.join(onnx_dir, "vocoder.onnx")
-
-    dp_ort = load_onnx(dp_onnx_path, opts, providers)
-    text_enc_ort = load_onnx(text_enc_onnx_path, opts, providers)
-    vector_est_ort = load_onnx(vector_est_onnx_path, opts, providers)
-    vocoder_ort = load_onnx(vocoder_onnx_path, opts, providers)
-    return dp_ort, text_enc_ort, vector_est_ort, vocoder_ort
-
-
-def load_cfgs(onnx_dir: str) -> dict:
-    cfg_path = os.path.join(onnx_dir, "tts.json")
-    with open(cfg_path, "r") as f:
-        cfgs = json.load(f)
-    return cfgs
-
-
-def load_text_processor(onnx_dir: str) -> UnicodeProcessor:
-    unicode_indexer_path = os.path.join(onnx_dir, "unicode_indexer.json")
-    text_processor = UnicodeProcessor(unicode_indexer_path)
-    return text_processor
-
-
-def load_text_to_speech(onnx_dir: str, use_gpu: bool = False) -> TextToSpeech:
-    opts = ort.SessionOptions()
-    if use_gpu:
-        raise NotImplementedError("GPU mode is not fully tested")
-    else:
-        providers = ["CPUExecutionProvider"]
-        print("Using CPU for inference")
-    cfgs = load_cfgs(onnx_dir)
-    dp_ort, text_enc_ort, vector_est_ort, vocoder_ort = load_onnx_all(
-        onnx_dir, opts, providers
-    )
-    text_processor = load_text_processor(onnx_dir)
-    return TextToSpeech(
-        cfgs, text_processor, dp_ort, text_enc_ort, vector_est_ort, vocoder_ort
-    )
-
-
-def load_voice_style(voice_style_paths: list[str], verbose: bool = False) -> Style:
-    bsz = len(voice_style_paths)
-
-    # Read first file to get dimensions
-    with open(voice_style_paths[0], "r") as f:
-        first_style = json.load(f)
-    ttl_dims = first_style["style_ttl"]["dims"]
-    dp_dims = first_style["style_dp"]["dims"]
-
-    # Pre-allocate arrays with full batch size
-    ttl_style = np.zeros([bsz, ttl_dims[1], ttl_dims[2]], dtype=np.float32)
-    dp_style = np.zeros([bsz, dp_dims[1], dp_dims[2]], dtype=np.float32)
-
-    # Fill in the data
-    for i, voice_style_path in enumerate(voice_style_paths):
-        with open(voice_style_path, "r") as f:
-            voice_style = json.load(f)
-
-        ttl_data = np.array(
-            voice_style["style_ttl"]["data"], dtype=np.float32
-        ).flatten()
-        ttl_style[i] = ttl_data.reshape(ttl_dims[1], ttl_dims[2])
-
-        dp_data = np.array(voice_style["style_dp"]["data"], dtype=np.float32).flatten()
-        dp_style[i] = dp_data.reshape(dp_dims[1], dp_dims[2])
-
+def load_voice_style(voice_paths: list[str], verbose: bool = False) -> str:
+    """
+    Load voice style (backwards compatibility).
+    
+    Args:
+        voice_paths: List of paths to voice files
+        verbose: Whether to print verbose output
+        
+    Returns:
+        Voice name extracted from first path
+    """
+    # Extract voice name from path (e.g., "assets/voices/M1.bin" -> "M1")
+    voice_name = os.path.basename(voice_paths[0]).replace(".bin", "").replace(".json", "")
     if verbose:
-        print(f"Loaded {bsz} voice styles")
-    return Style(ttl_style, dp_style)
+        print(f"Loaded voice: {voice_name}")
+    return voice_name
 
+
+# Utility classes for backwards compatibility
+
+class Style:
+    """Dummy Style class for backwards compatibility."""
+    def __init__(self, voice_name: str):
+        self.voice_name = voice_name
+
+
+class TextToSpeech:
+    """Wrapper class for backwards compatibility."""
+    def __init__(self, model_path: str, use_gpu: bool = False):
+        self.tts = SupertonicTTS(model_path, use_gpu)
+        self.sample_rate = self.tts.sample_rate
+    
+    def __call__(self, text: str, lang: str, style, total_step: int, speed: float = 1.0):
+        voice = style if isinstance(style, str) else "M1"
+        return self.tts(text, lang, voice, total_step, speed)
+    
+    def batch(self, text_list: list[str], lang_list: list[str], style, total_step: int, speed: float = 1.0):
+        voice = style if isinstance(style, str) else "M1"
+        return self.tts.batch(text_list, lang_list, voice, total_step, speed)
+
+
+# Utility functions
 
 @contextmanager
 def timer(name: str):
+    """Context manager for timing operations."""
     start = time.time()
     print(f"{name}...")
     yield
@@ -376,12 +333,8 @@ def timer(name: str):
 
 
 def sanitize_filename(text: str, max_len: int) -> str:
-    """Sanitize filename by replacing non-alphanumeric characters with underscores (supports Unicode)"""
-    import re
-
+    """Sanitize filename by replacing non-alphanumeric characters with underscores."""
     prefix = text[:max_len]
-    # \w matches Unicode word characters (letters, digits, underscore) with re.UNICODE
-    # We replace non-word characters except keeping existing underscores
     return re.sub(r"[^\w]", "_", prefix, flags=re.UNICODE)
 
 
@@ -396,8 +349,6 @@ def chunk_text(text: str, max_len: int = 300) -> list[str]:
     Returns:
         List of text chunks
     """
-    import re
-
     # Split by paragraph (two or more newlines)
     paragraphs = [p.strip() for p in re.split(r"\n\s*\n+", text.strip()) if p.strip()]
 
@@ -408,8 +359,7 @@ def chunk_text(text: str, max_len: int = 300) -> list[str]:
         if not paragraph:
             continue
 
-        # Split by sentence boundaries (period, question mark, exclamation mark followed by space)
-        # But exclude common abbreviations like Mr., Mrs., Dr., etc. and single capital letters like F.
+        # Split by sentence boundaries
         pattern = r"(?<!Mr\.)(?<!Mrs\.)(?<!Ms\.)(?<!Dr\.)(?<!Prof\.)(?<!Sr\.)(?<!Jr\.)(?<!Ph\.D\.)(?<!etc\.)(?<!e\.g\.)(?<!i\.e\.)(?<!vs\.)(?<!Inc\.)(?<!Ltd\.)(?<!Co\.)(?<!Corp\.)(?<!St\.)(?<!Ave\.)(?<!Blvd\.)(?<!\b[A-Z]\.)(?<=[.!?])\s+"
         sentences = re.split(pattern, paragraph)
 
@@ -426,4 +376,4 @@ def chunk_text(text: str, max_len: int = 300) -> list[str]:
         if current_chunk:
             chunks.append(current_chunk.strip())
 
-    return chunks
+    return chunks if chunks else [text]
