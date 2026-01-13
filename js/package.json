@@ -1,0 +1,29 @@
+{
+  "name": "supertonic-tts-js",
+  "version": "1.0.0",
+  "description": "Supertonic TTS implementation using Transformers.js with Intel CPU optimizations",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "node examples/basic.js",
+    "example:basic": "node examples/basic.js",
+    "example:batch": "node examples/batch.js",
+    "example:advanced": "node examples/advanced.js"
+  },
+  "keywords": [
+    "tts",
+    "text-to-speech",
+    "transformers",
+    "onnx",
+    "supertonic",
+    "speech-synthesis"
+  ],
+  "author": "Supertone Inc.",
+  "license": "MIT",
+  "dependencies": {
+    "@huggingface/transformers": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
