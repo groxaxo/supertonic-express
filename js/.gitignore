@@ -9,6 +9,10 @@ yarn.lock
 output_*.wav
 output.wav
 
+# Test files
+test.js
+examples/test.js
+
 # Cache directories
 .cache/
 .transformers-cache/
