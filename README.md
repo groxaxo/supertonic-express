@@ -13,6 +13,7 @@
 
 ### 📰 Update News
 
+- **2026.01.13** - 🎉 **FastAPI Server** released! OpenAI-compatible REST API with streaming support, multiple audio formats, and Docker deployment. Perfect for Open-WebUI integration! [API Docs](docs/API.md) | [Docker Setup](docker/)
 - **2026.01.06** - 🎉 **Supertonic 2** released with multilingual support! Now supports English (`en`), Korean (`ko`), Spanish (`es`), Portuguese (`pt`), and French (`fr`). [Demo](https://huggingface.co/spaces/Supertone/supertonic-2) | [Models](https://huggingface.co/Supertone/supertonic-2)
 - **2025.12.10** - Added `supertonic` PyPI package! Install via `pip install supertonic`. For details, visit [supertonic-py documentation](https://supertone-inc.github.io/supertonic-py)
 - **2025.12.10** - Added [6 new voice styles](https://huggingface.co/Supertone/supertonic/tree/b10dbaf18b316159be75b34d24f740008fddd381) (M3, M4, M5, F3, F4, F5). See [Voices](https://supertone-inc.github.io/supertonic-py/voices/) for details
@@ -63,7 +64,7 @@ We provide ready-to-use TTS inference examples across multiple ecosystems:
 
 | Language/Platform | Path | Description |
 |-------------------|------|-------------|
-| [**Python**](py/) | `py/` | ONNX Runtime inference |
+| [**Python**](py/) | `py/` | ONNX Runtime inference + **FastAPI Server** |
 | [**Node.js**](nodejs/) | `nodejs/` | Server-side JavaScript |
 | [**Browser**](web/) | `web/` | WebGPU/WASM inference |
 | [**Java**](java/) | `java/` | Cross-platform JVM |
@@ -76,6 +77,57 @@ We provide ready-to-use TTS inference examples across multiple ecosystems:
 | [**Flutter**](flutter/) | `flutter/` | Cross-platform apps |
 
 > For detailed usage instructions, please refer to the README.md in each language directory.
+
+### 🚀 NEW: OpenAI-Compatible FastAPI Server
+
+We now provide a production-ready **FastAPI server** with OpenAI-compatible endpoints!
+
+**Features:**
+- ✅ OpenAI-compatible `/v1/audio/speech` endpoint
+- ✅ Streaming audio generation
+- ✅ Multiple audio formats (MP3, Opus, AAC, FLAC, WAV, PCM)
+- ✅ Docker support (CPU & GPU)
+- ✅ **Works out-of-the-box with Open-WebUI** 🎉
+
+**Quick Start:**
+
+```bash
+# Local
+cd py
+./start_server.sh
+
+# Docker (CPU)
+cd docker/cpu
+docker-compose up -d
+
+# Docker (GPU)
+cd docker/gpu
+docker-compose up -d
+```
+
+**Usage with OpenAI Client:**
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:8880/v1",
+    api_key="not-needed"
+)
+
+response = client.audio.speech.create(
+    model="supertonic",
+    voice="M1",
+    input="Hello from Supertonic!"
+)
+
+response.stream_to_file("output.mp3")
+```
+
+📚 **Documentation:**
+- [API Documentation](docs/API.md)
+- [Open-WebUI Integration Guide](docs/OPEN_WEBUI_INTEGRATION.md)
+- [Python README](py/README_API.md)
 
 ## Getting Started
 
