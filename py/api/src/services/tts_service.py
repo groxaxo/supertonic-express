@@ -1,0 +1,169 @@
+"""TTS Service wrapper for Supertonic ONNX models"""
+
+import asyncio
+import io
+import json
+import os
+from typing import AsyncGenerator, Optional
+
+import numpy as np
+import soundfile as sf
+from loguru import logger
+
+# Import from parent package helper
+from pathlib import Path
+import importlib.util
+
+# Load helper module from the parent py directory
+_helper_path = Path(__file__).parent.parent.parent.parent / "helper.py"
+spec = importlib.util.spec_from_file_location("helper", _helper_path)
+helper = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(helper)
+
+# Import needed functions from helper
+load_text_to_speech = helper.load_text_to_speech
+load_voice_style = helper.load_voice_style
+Style = helper.Style
+TextToSpeech = helper.TextToSpeech
+chunk_text = helper.chunk_text
+
+from ..core.config import settings
+
+
+class TTSService:
+    """Service for text-to-speech generation"""
+
+    def __init__(self):
+        self.tts_model: Optional[TextToSpeech] = None
+        self._lock = asyncio.Lock()
+        self._initialized = False
+
+    async def initialize(self):
+        """Initialize the TTS model"""
+        if self._initialized:
+            return
+
+        async with self._lock:
+            if self._initialized:
+                return
+
+            logger.info(f"Loading TTS model from {settings.onnx_dir}")
+            await asyncio.to_thread(self._load_model)
+            self._initialized = True
+            logger.info("TTS model loaded successfully")
+
+    def _load_model(self):
+        """Load the ONNX model (sync)"""
+        self.tts_model = load_text_to_speech(settings.onnx_dir, settings.use_gpu)
+
+    async def get_available_voices(self) -> list[str]:
+        """Get list of available voice styles"""
+        voices = []
+        if os.path.exists(settings.voice_styles_dir):
+            for file in os.listdir(settings.voice_styles_dir):
+                if file.endswith(".json"):
+                    voices.append(file.replace(".json", ""))
+        return sorted(voices)
+
+    def _get_voice_path(self, voice_name: str) -> str:
+        """Get the full path to a voice style file"""
+        return os.path.join(settings.voice_styles_dir, f"{voice_name}.json")
+
+    def _detect_language(self, text: str, lang_code: Optional[str] = None) -> str:
+        """Detect or validate language code"""
+        if lang_code and lang_code in ["en", "ko", "es", "pt", "fr"]:
+            return lang_code
+        # Default to English for now - could add language detection library
+        return "en"
+
+    async def generate_audio(
+        self,
+        text: str,
+        voice: str = "M1",
+        speed: float = 1.0,
+        lang_code: Optional[str] = None,
+        total_steps: Optional[int] = None,
+    ) -> bytes:
+        """Generate complete audio file"""
+        if not self._initialized:
+            await self.initialize()
+
+        # Get language
+        lang = self._detect_language(text, lang_code)
+
+        # Load voice style
+        voice_path = self._get_voice_path(voice)
+        if not os.path.exists(voice_path):
+            raise ValueError(f"Voice '{voice}' not found at {voice_path}")
+
+        style = await asyncio.to_thread(load_voice_style, [voice_path], False)
+
+        # Use configured default if not specified
+        steps = total_steps or settings.default_total_steps
+        actual_speed = speed * settings.default_speed
+
+        # Generate audio
+        wav, duration = await asyncio.to_thread(
+            self.tts_model,
+            text,
+            lang,
+            style,
+            steps,
+            actual_speed,
+        )
+
+        # Trim to actual duration
+        sample_count = int(self.tts_model.sample_rate * duration[0].item())
+        wav_trimmed = wav[0, :sample_count]
+
+        # Convert to bytes
+        buffer = io.BytesIO()
+        sf.write(buffer, wav_trimmed, self.tts_model.sample_rate, format="WAV")
+        return buffer.getvalue()
+
+    async def generate_audio_stream(
+        self,
+        text: str,
+        voice: str = "M1",
+        speed: float = 1.0,
+        lang_code: Optional[str] = None,
+        total_steps: Optional[int] = None,
+        chunk_size: int = 8192,
+    ) -> AsyncGenerator[bytes, None]:
+        """
+        Generate audio in streaming chunks.
+        
+        Note: This implementation generates complete audio and streams it in chunks.
+        For very long texts, consider using the chunk_text functionality to split
+        text into smaller segments and generate them sequentially.
+        """
+        # Generate complete audio
+        audio_data = await self.generate_audio(
+            text, voice, speed, lang_code, total_steps
+        )
+
+        # Stream the audio in chunks
+        for i in range(0, len(audio_data), chunk_size):
+            yield audio_data[i : i + chunk_size]
+            # Small delay to simulate streaming and allow event loop to process
+            await asyncio.sleep(0.001)
+
+    @property
+    def sample_rate(self) -> int:
+        """Get the model's sample rate"""
+        return self.tts_model.sample_rate if self.tts_model else settings.sample_rate
+
+
+# Global service instance
+_tts_service: Optional[TTSService] = None
+
+
+async def get_tts_service() -> TTSService:
+    """Get or create global TTS service instance"""
+    global _tts_service
+
+    if _tts_service is None:
+        _tts_service = TTSService()
+        await _tts_service.initialize()
+
+    return _tts_service
