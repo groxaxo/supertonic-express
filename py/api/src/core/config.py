@@ -15,14 +15,14 @@ class Settings(BaseSettings):
     port: int = 8880
     
     # Model Settings
-    onnx_dir: str = os.getenv("ONNX_DIR", "assets/onnx")
-    voice_styles_dir: str = os.getenv("VOICE_STYLES_DIR", "assets/voice_styles")
+    onnx_dir: str = os.getenv("ONNX_DIR", "assets")
+    voice_styles_dir: str = os.getenv("VOICE_STYLES_DIR", "assets/voices")
     use_gpu: bool = os.getenv("USE_GPU", "false").lower() == "true"
     
     # TTS Settings
     default_speed: float = 1.05
     default_total_steps: int = 5
-    sample_rate: int = 24000
+    sample_rate: int = 44100
     
     # CORS Settings
     cors_enabled: bool = True
