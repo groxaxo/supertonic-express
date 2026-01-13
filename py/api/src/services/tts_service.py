@@ -59,14 +59,25 @@ class TTSService:
     async def get_available_voices(self) -> list[str]:
         """Get list of available voice styles"""
         voices = []
-        if os.path.exists(settings.voice_styles_dir):
+        voices_dir = os.path.join(settings.onnx_dir, "voices")
+        if os.path.exists(voices_dir):
+            for file in os.listdir(voices_dir):
+                if file.endswith(".bin"):
+                    voices.append(file.replace(".bin", ""))
+        # Fallback to old location for backwards compatibility
+        elif os.path.exists(settings.voice_styles_dir):
             for file in os.listdir(settings.voice_styles_dir):
-                if file.endswith(".json"):
-                    voices.append(file.replace(".json", ""))
+                if file.endswith(".json") or file.endswith(".bin"):
+                    voices.append(file.replace(".json", "").replace(".bin", ""))
         return sorted(voices)
 
     def _get_voice_path(self, voice_name: str) -> str:
         """Get the full path to a voice style file"""
+        # Try new location first (.bin files in model voices directory)
+        voice_path = os.path.join(settings.onnx_dir, "voices", f"{voice_name}.bin")
+        if os.path.exists(voice_path):
+            return voice_path
+        # Fall back to old location (.json files)
         return os.path.join(settings.voice_styles_dir, f"{voice_name}.json")
 
     def _detect_language(self, text: str, lang_code: Optional[str] = None) -> str:
@@ -91,23 +102,16 @@ class TTSService:
         # Get language
         lang = self._detect_language(text, lang_code)
 
-        # Load voice style
-        voice_path = self._get_voice_path(voice)
-        if not os.path.exists(voice_path):
-            raise ValueError(f"Voice '{voice}' not found at {voice_path}")
-
-        style = await asyncio.to_thread(load_voice_style, [voice_path], False)
-
         # Use configured default if not specified
         steps = total_steps or settings.default_total_steps
         actual_speed = speed * settings.default_speed
 
-        # Generate audio
+        # Generate audio (voice is passed directly as string in new model)
         wav, duration = await asyncio.to_thread(
             self.tts_model,
             text,
             lang,
-            style,
+            voice,
             steps,
             actual_speed,
         )

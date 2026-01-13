@@ -20,14 +20,19 @@ OpenAI-compatible FastAPI server for Supertonic TTS.
 1. **Install dependencies:**
 
 ```bash
-pip install -r requirements.txt
+cd py
+pip install -e .
 ```
 
-2. **Download models** (if not already downloaded):
+2. **Download the ONNX model from Hugging Face:**
 
 ```bash
+# Install huggingface-hub if not already installed
+pip install huggingface-hub
+
+# Download the model to the assets directory
 cd ..
-git clone https://huggingface.co/Supertone/supertonic-2 assets
+python -c "from huggingface_hub import snapshot_download; snapshot_download('onnx-community/Supertonic-TTS-2-ONNX', local_dir='assets')"
 cd py
 ```
 
@@ -44,10 +49,6 @@ python -m uvicorn api.src.main:app --host 0.0.0.0 --port 8880 --reload
 ```
 
 The server will start at `http://localhost:8880`
-
-### Docker Deployment
-
-#### CPU Version (Recommended for most users)
 
 ```bash
 cd ../docker/cpu

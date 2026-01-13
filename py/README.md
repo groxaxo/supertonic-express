@@ -1,206 +1,170 @@
-# Python - TTS ONNX Inference & FastAPI Server
+# Supertonic Python Implementation
 
-This directory contains Python examples for Supertonic TTS inference and an **OpenAI-compatible FastAPI server**.
+This is the Python implementation of Supertonic TTS using the [onnx-community/Supertonic-TTS-2-ONNX](https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX) model.
 
-## 🚀 FastAPI Server (NEW!)
+## Features
 
-We now provide an **OpenAI-compatible FastAPI server** for easy integration!
-
-### Features
-
-- ✅ **OpenAI-Compatible API** - Drop-in replacement for OpenAI TTS
-- ✅ **Streaming Support** - Real-time audio streaming  
-- ✅ **Multiple Formats** - MP3, Opus, AAC, FLAC, WAV, PCM
-- ✅ **Open-WebUI Compatible** - Works out of the box with Open-WebUI
-- ✅ **Docker Support** - CPU and GPU Docker images available
-
-### Quick Start (API Server)
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the server
-./start_server.sh
-```
-
-Server will be available at `http://localhost:8880`
-
-**See [README_API.md](README_API.md) for complete API documentation.**
-
-### OpenAI Client Example
-
-```python
-from openai import OpenAI
-
-client = OpenAI(
-    base_url="http://localhost:8880/v1",
-    api_key="not-needed"
-)
-
-response = client.audio.speech.create(
-    model="supertonic",
-    voice="M1",
-    input="Hello, this is Supertonic!"
-)
-
-response.stream_to_file("output.mp3")
-```
-
-### Docker Deployment
-
-```bash
-# CPU Version
-cd ../docker/cpu && docker-compose up -d
-
-# GPU Version  
-cd ../docker/gpu && docker-compose up -d
-```
-
----
-
-## 📝 TTS ONNX Inference Examples
-
-This guide provides examples for running TTS inference using `example_onnx.py`.
-
-## 📰 Update News
-
-**2026.01.06** - 🎉 **Supertonic 2** released with multilingual support! Now supports English (`en`), Korean (`ko`), Spanish (`es`), Portuguese (`pt`), and French (`fr`). [Demo](https://huggingface.co/spaces/Supertone/supertonic-2) | [Models](https://huggingface.co/Supertone/supertonic-2)
-
-**2025.12.10** - Added `supertonic` PyPI package! Install via `pip install supertonic` for a streamlined experience. This is a separate usage method from the ONNX examples in this directory. For more details, visit [supertonic-py documentation](https://supertone-inc.github.io/supertonic-py) and see `example_pypi.py` for usage.
-
-**2025.12.10** - Added [6 new voice styles](https://huggingface.co/Supertone/supertonic/tree/b10dbaf18b316159be75b34d24f740008fddd381) (M3, M4, M5, F3, F4, F5). See [Voices](https://supertone-inc.github.io/supertonic-py/voices/) for details
-
-**2025.12.08** - Optimized ONNX models via [OnnxSlim](https://github.com/inisis/OnnxSlim) now available on [Hugging Face Models](https://huggingface.co/Supertone/supertonic)
-
-**2025.11.23** - Enhanced text preprocessing with comprehensive normalization, emoji removal, symbol replacement, and punctuation handling for improved synthesis quality.
-
-**2025.11.19** - Added `--speed` parameter to control speech synthesis speed. Adjust the speed factor to make speech faster or slower while maintaining natural quality.
-
-**2025.11.19** - Added automatic text chunking for long-form inference. Long texts are split into chunks and synthesized with natural pauses.
+- **ONNX Runtime**: Fast inference using optimized ONNX models
+- **Transformers Tokenizer**: Uses Hugging Face's AutoTokenizer for text processing
+- **Multi-language Support**: English, Korean, Spanish, Portuguese, French
+- **Multiple Voices**: Various male and female voice styles (.bin format)
+- **FastAPI Server**: OpenAI-compatible REST API with streaming support
+- **Batch Processing**: Efficient batch inference for multiple texts
 
 ## Installation
 
-This project uses [uv](https://docs.astral.sh/uv/) for fast package management.
-
-### Install uv (if not already installed)
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+cd py
+pip install -e .
 ```
 
-### Install dependencies
+## Downloading the Model
+
+The model files need to be downloaded from Hugging Face:
+
 ```bash
-uv sync
+# Install huggingface-hub
+pip install huggingface-hub
+
+# Download the model to the assets directory
+cd ..
+python -c "from huggingface_hub import snapshot_download; snapshot_download('onnx-community/Supertonic-TTS-2-ONNX', local_dir='assets')"
+cd py
 ```
 
-Or if you prefer using traditional pip with requirements.txt:
-```bash
-pip install -r requirements.txt
+This will download:
+- ONNX models (`text_encoder.onnx`, `latent_denoiser.onnx`, `voice_decoder.onnx`)
+- Tokenizer files
+- Voice embeddings (.bin files)
+
+## Quick Start
+
+### Basic Usage
+
+```python
+from helper import SupertonicTTS
+
+# Initialize the model
+tts = SupertonicTTS(model_path="../assets", use_gpu=False)
+
+# Generate audio
+prompts = ["Hello, this is a test!"]
+audio_data = tts.generate(
+    prompts,
+    voice="M1",      # Voice style (M1, F1, etc.)
+    speed=1.0,       # Speech speed
+    steps=5,         # Inference steps (higher = better quality)
+    language="en"    # Language code
+)
+
+# Save the audio
+import soundfile as sf
+sf.write("output.wav", audio_data[0], tts.SAMPLE_RATE)
 ```
 
-## Basic Usage
+### Command Line
 
-### Example 1: Default Inference
-Run inference with default settings:
 ```bash
-uv run example_onnx.py
+# Basic usage
+python example_onnx.py --onnx-dir ../assets
+
+# Custom parameters
+python example_onnx.py \
+    --onnx-dir ../assets \
+    --voice-style M1 \
+    --text "Hello from Supertonic!" \
+    --lang en \
+    --speed 1.05 \
+    --total-step 10
 ```
 
-This will use:
-- Voice style: `assets/voice_styles/M1.json`
-- Text: "This morning, I took a walk in the park, and the sound of the birds and the breeze was so pleasant that I stopped for a long time just to listen."
-- Output directory: `results/`
-- Total steps: 5
-- Number of generations: 4
+### FastAPI Server
 
-### Example 2: Batch Inference
-Process multiple voice styles and texts at once:
+Start the OpenAI-compatible API server:
+
 ```bash
-uv run example_onnx.py \
-  --voice-style assets/voice_styles/M1.json assets/voice_styles/F1.json \
-  --text "The sun sets behind the mountains, painting the sky in shades of pink and orange." "오늘 아침에 공원을 산책했는데, 새소리와 바람 소리가 너무 좋아서 한참을 멈춰 서서 들었어요." \
-  --lang en ko \
-  --batch
+./start_server.sh
 ```
 
-This will:
-- Use `--batch` flag to enable batch processing mode
-- Generate speech for 2 different voice-text pairs
-- Use male voice style (M1.json) for the first English text
-- Use female voice style (F1.json) for the second Korean text
-- Process both samples in a single batch (automatic text chunking disabled)
+See [README_API.md](README_API.md) for full API documentation.
 
-### Example 3: High Quality Inference
-Increase denoising steps for better quality:
+## Model Architecture
+
+The new model uses a three-stage architecture:
+
+1. **Text Encoder** (`text_encoder.onnx`): 
+   - Takes tokenized text and voice embeddings
+   - Outputs text representations and duration predictions
+
+2. **Latent Denoiser** (`latent_denoiser.onnx`):
+   - Performs iterative denoising on latent representations
+   - Controlled by number of inference steps (higher = better quality)
+
+3. **Voice Decoder** (`voice_decoder.onnx`):
+   - Decodes latent representations to audio waveforms
+   - Outputs 44.1kHz audio
+
+## Voice Files
+
+Voice embeddings are stored as binary files (`.bin` format) in the `assets/voices/` directory:
+- `M1.bin`, `M2.bin`, etc. - Male voices
+- `F1.bin`, `F2.bin`, etc. - Female voices
+
+Each file contains a 128-dimensional style vector.
+
+## Migration from Old Model
+
+This implementation replaces the previous model structure which used:
+- `duration_predictor.onnx`, `text_encoder.onnx`, `vector_estimator.onnx`, `vocoder.onnx`
+- JSON files for voice styles
+- Custom Unicode processor for tokenization
+
+The new model provides:
+- Simpler architecture with 3 models instead of 4
+- Standard Transformers tokenizer (better compatibility)
+- Binary voice embeddings (more efficient)
+- Improved performance and quality
+
+## Configuration
+
+Key parameters:
+- `SAMPLE_RATE`: 44100 Hz
+- `LATENT_DIM`: 24
+- `STYLE_DIM`: 128
+- `BASE_CHUNK_SIZE`: 512
+- `CHUNK_COMPRESS_FACTOR`: 6
+
+## Examples
+
+See the following files for examples:
+- `example_onnx.py` - Command-line TTS generation
+- `test_helper.py` - Unit tests for the helper module
+- `api/` - FastAPI server implementation
+
+## Troubleshooting
+
+### ImportError: No module named 'transformers'
+Install the transformers library:
 ```bash
-uv run example_onnx.py \
-  --total-step 10 \
-  --voice-style assets/voice_styles/M1.json \
-  --text "Increasing the number of denoising steps improves the output's fidelity and overall quality."
+pip install transformers
 ```
 
-This will:
-- Use 10 denoising steps instead of the default 5
-- Produce higher quality output at the cost of slower inference
+### Voice not found error
+Make sure you've downloaded the model files and the voice .bin files exist in `assets/voices/`.
 
-### Example 4: Long-Form Inference
-For long texts, the system automatically chunks the text into manageable segments and generates a single audio file:
-```bash
-uv run example_onnx.py \
-  --voice-style assets/voice_styles/M1.json \
-  --text "Once upon a time, in a small village nestled between rolling hills, there lived a young artist named Clara. Every morning, she would wake up before dawn to capture the first light of day. The golden rays streaming through her window inspired countless paintings. Her work was known throughout the region for its vibrant colors and emotional depth. People from far and wide came to see her gallery, and many said her paintings could tell stories that words never could."
-```
+### ONNX Runtime error
+Ensure all three ONNX model files are present in `assets/onnx/`:
+- `text_encoder.onnx`
+- `latent_denoiser.onnx`
+- `voice_decoder.onnx`
 
-This will:
-- Automatically split the long text into smaller chunks (max 300 characters by default)
-- Process each chunk separately while maintaining natural speech flow
-- Insert brief silences (0.3 seconds) between chunks for natural pacing
-- Combine all chunks into a single output audio file
+## Performance
 
-**Note**: When using batch mode (`--batch`), automatic text chunking is disabled. Use non-batch mode for long-form text synthesis.
+The model is optimized for CPU inference but also supports GPU acceleration. Typical performance:
+- RTF (Real-Time Factor): 0.01-0.02 on modern CPUs
+- Supports batch processing for improved throughput
+- Adjustable quality via `steps` parameter (1-50)
 
-### Example 5: Adjusting Speech Speed
-Control the speed of speech synthesis:
-```bash
-# Faster speech (speed > 1.0)
-uv run example_onnx.py \
-  --voice-style assets/voice_styles/F2.json \
-  --text "This text will be synthesized at a faster pace." \
-  --speed 1.2
+## License
 
-# Slower speech (speed < 1.0)
-uv run example_onnx.py \
-  --voice-style assets/voice_styles/M2.json \
-  --text "This text will be synthesized at a slower, more deliberate pace." \
-  --speed 0.9
-```
-
-This will:
-- Use `--speed 1.2` to generate faster speech
-- Use `--speed 0.9` to generate slower speech
-- Default speed is 1.05 if not specified
-- Recommended speed range is between 0.9 and 1.5 for natural-sounding results
-
-## Available Arguments
-
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `--use-gpu` | flag | False | Use GPU for inference (with CPU fallback) |
-| `--onnx-dir` | str | `assets/onnx` | Path to ONNX model directory |
-| `--total-step` | int | 5 | Number of denoising steps (higher = better quality, slower) |
-| `--speed` | float | 1.05 | Speech speed factor (higher = faster, lower = slower) |
-| `--n-test` | int | 4 | Number of times to generate each sample |
-| `--voice-style` | str+ | `assets/voice_styles/M1.json` | Voice style file path(s) |
-| `--text` | str+ | (long default text) | Text(s) to synthesize |
-| `--lang` | str+ | `en` | Language(s) for text(s): `en`, `ko`, `es`, `pt`, `fr` |
-| `--save-dir` | str | `results` | Output directory |
-| `--batch` | flag | False | Enable batch mode (disables automatic text chunking) |
-
-## Notes
-
-- **Batch Processing**: The number of `--voice-style` files must match the number of `--text` entries
-- **Multilingual Support**: Use `--lang` to specify language(s). Available: `en` (English), `ko` (Korean), `es` (Spanish), `pt` (Portuguese), `fr` (French)
-- **Long-Form Inference**: Without `--batch` flag, long texts are automatically chunked and combined into a single audio file with natural pauses
-- **Quality vs Speed**: Higher `--total-step` values produce better quality but take longer
-- **GPU Support**: GPU mode is not supported yet
-
+See the main [LICENSE](../LICENSE) file for details.

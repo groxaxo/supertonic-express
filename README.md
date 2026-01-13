@@ -2,8 +2,7 @@
 
 [![v2 Demo](https://img.shields.io/badge/🤗%20v2-Demo-yellow)](https://huggingface.co/spaces/Supertone/supertonic-2)
 [![v2 Models](https://img.shields.io/badge/🤗%20v2-Models-blue)](https://huggingface.co/Supertone/supertonic-2)
-[![v1 Demo](https://img.shields.io/badge/🤗%20v1%20(old)-Demo-lightgrey)](https://huggingface.co/spaces/Supertone/supertonic#interactive-demo)
-[![v1 Models](https://img.shields.io/badge/🤗%20v1%20(old)-Models-lightgrey)](https://huggingface.co/Supertone/supertonic)
+[![ONNX Model](https://img.shields.io/badge/🤗%20ONNX-Model-green)](https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX)
 
 <p align="center">
   <img src="img/supertonic_preview_0.1.jpg" alt="Supertonic Banner">
@@ -11,14 +10,13 @@
 
 **Supertonic** is a lightning-fast, on-device text-to-speech system designed for **extreme performance** with minimal computational overhead. Powered by ONNX Runtime, it runs entirely on your device—no cloud, no API calls, no privacy concerns.
 
+This repository provides a **Python implementation** using the optimized ONNX model from [onnx-community/Supertonic-TTS-2-ONNX](https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX).
+
 ### 📰 Update News
 
-- **2026.01.13** - 🎉 **FastAPI Server** released! OpenAI-compatible REST API with streaming support, multiple audio formats, and Docker deployment. Perfect for Open-WebUI integration! [API Docs](docs/API.md) | [Docker Setup](docker/)
+- **2026.01.13** - 🎉 Migrated to use **onnx-community/Supertonic-TTS-2-ONNX** model with Transformers tokenizer for improved compatibility
+- **2026.01.13** - 🎉 **FastAPI Server** released! OpenAI-compatible REST API with streaming support, multiple audio formats, and Docker deployment. Perfect for Open-WebUI integration! [API Docs](docs/API.md)
 - **2026.01.06** - 🎉 **Supertonic 2** released with multilingual support! Now supports English (`en`), Korean (`ko`), Spanish (`es`), Portuguese (`pt`), and French (`fr`). [Demo](https://huggingface.co/spaces/Supertone/supertonic-2) | [Models](https://huggingface.co/Supertone/supertonic-2)
-- **2025.12.10** - Added `supertonic` PyPI package! Install via `pip install supertonic`. For details, visit [supertonic-py documentation](https://supertone-inc.github.io/supertonic-py)
-- **2025.12.10** - Added [6 new voice styles](https://huggingface.co/Supertone/supertonic/tree/b10dbaf18b316159be75b34d24f740008fddd381) (M3, M4, M5, F3, F4, F5). See [Voices](https://supertone-inc.github.io/supertonic-py/voices/) for details
-- **2025.12.08** - Optimized ONNX models via [OnnxSlim](https://github.com/inisis/OnnxSlim) now available on [Hugging Face Models](https://huggingface.co/Supertone/supertonic)
-- **2025.11.24** - Added Flutter SDK support with macOS compatibility
 
 ### Table of Contents
 
@@ -60,25 +58,13 @@ https://github.com/user-attachments/assets/64980e58-ad91-423a-9623-78c2ffc13680
 
 ## Language Support
 
-We provide ready-to-use TTS inference examples across multiple ecosystems:
+This repository provides a **Python implementation** using ONNX Runtime for on-device inference.
 
-| Language/Platform | Path | Description |
-|-------------------|------|-------------|
-| [**Python**](py/) | `py/` | ONNX Runtime inference + **FastAPI Server** |
-| [**Node.js**](nodejs/) | `nodejs/` | Server-side JavaScript |
-| [**Browser**](web/) | `web/` | WebGPU/WASM inference |
-| [**Java**](java/) | `java/` | Cross-platform JVM |
-| [**C++**](cpp/) | `cpp/` | High-performance C++ |
-| [**C#**](csharp/) | `csharp/` | .NET ecosystem |
-| [**Go**](go/) | `go/` | Go implementation |
-| [**Swift**](swift/) | `swift/` | macOS applications |
-| [**iOS**](ios/) | `ios/` | Native iOS apps |
-| [**Rust**](rust/) | `rust/` | Memory-safe systems |
-| [**Flutter**](flutter/) | `flutter/` | Cross-platform apps |
+For other language implementations, see:
+- [Transformers.js](https://github.com/huggingface/transformers.js) - JavaScript/TypeScript library with browser and Node.js support
+- [Original Supertonic Repository](https://github.com/supertone-inc/supertonic) - Multi-language implementations (C++, Java, Swift, etc.)
 
-> For detailed usage instructions, please refer to the README.md in each language directory.
-
-### 🚀 NEW: OpenAI-Compatible FastAPI Server
+### 🚀 Python FastAPI Server
 
 We now provide a production-ready **FastAPI server** with OpenAI-compatible endpoints!
 
@@ -92,17 +78,15 @@ We now provide a production-ready **FastAPI server** with OpenAI-compatible endp
 **Quick Start:**
 
 ```bash
-# Local
+# Install dependencies
 cd py
+pip install -e .
+
+# Download the ONNX model
+python -c "from huggingface_hub import snapshot_download; snapshot_download('onnx-community/Supertonic-TTS-2-ONNX', local_dir='assets')"
+
+# Start the server
 ./start_server.sh
-
-# Docker (CPU)
-cd docker/cpu
-docker-compose up -d
-
-# Docker (GPU)
-cd docker/gpu
-docker-compose up -d
 ```
 
 **Usage with OpenAI Client:**
@@ -126,7 +110,6 @@ response.stream_to_file("output.mp3")
 
 📚 **Documentation:**
 - [API Documentation](docs/API.md)
-- [Open-WebUI Integration Guide](docs/OPEN_WEBUI_INTEGRATION.md)
 - [Python README](py/README_API.md)
 
 ## Getting Started
@@ -134,20 +117,18 @@ response.stream_to_file("output.mp3")
 First, clone the repository:
 
 ```bash
-git clone https://github.com/supertone-inc/supertonic.git
-cd supertonic
+git clone https://github.com/groxaxo/supertonic-express.git
+cd supertonic-express
 ```
 
 ### Prerequisites
 
-Before running the examples, download the ONNX models and preset voices, and place them in the `assets` directory:
-
-> **Note:** The Hugging Face repository uses Git LFS. Please ensure Git LFS is installed and initialized before cloning or pulling large model files.
-> - macOS: `brew install git-lfs && git lfs install`
-> - Generic: see `https://git-lfs.com` for installers
+Download the ONNX model from Hugging Face:
 
 ```bash
-git clone https://huggingface.co/Supertone/supertonic-2 assets
+# Using huggingface_hub
+pip install huggingface-hub
+python -c "from huggingface_hub import snapshot_download; snapshot_download('onnx-community/Supertonic-TTS-2-ONNX', local_dir='assets')"
 ```
 
 ### Quick Start
@@ -155,83 +136,24 @@ git clone https://huggingface.co/Supertone/supertonic-2 assets
 **Python Example** ([Details](py/))
 ```bash
 cd py
-uv sync
-uv run example_onnx.py
+pip install -e .
+python example_onnx.py --onnx-dir ../assets
 ```
 
-**Node.js Example** ([Details](nodejs/))
+**FastAPI Server**
 ```bash
-cd nodejs
-npm install
-npm start
+cd py
+./start_server.sh
 ```
-
-**Browser Example** ([Details](web/))
-```bash
-cd web
-npm install
-npm run dev
-```
-
-**Java Example** ([Details](java/))
-```bash
-cd java
-mvn clean install
-mvn exec:java
-```
-
-**C++ Example** ([Details](cpp/))
-```bash
-cd cpp
-mkdir build && cd build
-cmake .. && cmake --build . --config Release
-./example_onnx
-```
-
-**C# Example** ([Details](csharp/))
-```bash
-cd csharp
-dotnet restore
-dotnet run
-```
-
-**Go Example** ([Details](go/))
-```bash
-cd go
-go mod download
-go run example_onnx.go helper.go
-```
-
-**Swift Example** ([Details](swift/))
-```bash
-cd swift
-swift build -c release
-.build/release/example_onnx
-```
-
-**Rust Example** ([Details](rust/))
-```bash
-cd rust
-cargo build --release
-./target/release/example_onnx
-```
-
-**iOS Example** ([Details](ios/))
-```bash
-cd ios/ExampleiOSApp
-xcodegen generate
-open ExampleiOSApp.xcodeproj
-```
-- In Xcode: Targets → ExampleiOSApp → Signing: select your Team
-- Choose your iPhone as run destination → Build & Run
 
 
 ### Technical Details
 
-- **Runtime**: ONNX Runtime for cross-platform inference (CPU-optimized; GPU mode is not tested)
-- **Browser Support**: onnxruntime-web for client-side inference
+- **Runtime**: ONNX Runtime for cross-platform inference (CPU-optimized; GPU mode available)
+- **Model**: Uses [onnx-community/Supertonic-TTS-2-ONNX](https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX)
+- **Tokenizer**: Hugging Face Transformers AutoTokenizer
 - **Batch Processing**: Supports batch inference for improved throughput
-- **Audio Output**: Outputs 16-bit WAV files
+- **Audio Output**: Outputs 16-bit WAV files at 44.1kHz sample rate
 
 ## Performance
 

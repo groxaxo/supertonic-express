@@ -44,8 +44,8 @@ def parse_args():
         "--voice-style",
         type=str,
         nargs="+",
-        default=["assets/voice_styles/M1.json"],
-        help="Voice style file path(s). Can specify multiple files for batch processing",
+        default=["M1"],
+        help="Voice style name (e.g., M1, F1). Note: When using batch mode, the first voice will be used for all texts.",
     )
     parser.add_argument(
         "--text",
@@ -78,21 +78,21 @@ total_step = args.total_step
 speed = args.speed
 n_test = args.n_test
 save_dir = args.save_dir
-voice_style_paths = args.voice_style
+voice_style_names = args.voice_style
 text_list = args.text
 lang_list = args.lang
 batch = args.batch
 
-assert len(voice_style_paths) == len(
+assert len(voice_style_names) == len(
     text_list
-), f"Number of voice styles ({len(voice_style_paths)}) must match number of texts ({len(text_list)})"
-bsz = len(voice_style_paths)
+), f"Number of voice styles ({len(voice_style_names)}) must match number of texts ({len(text_list)})"
+bsz = len(voice_style_names)
 
 # --- 2. Load Text to Speech --- #
 text_to_speech = load_text_to_speech(args.onnx_dir, args.use_gpu)
 
-# --- 3. Load Voice Style --- #
-style = load_voice_style(voice_style_paths, verbose=True)
+# --- 3. Use the first voice for all (new model uses voice name directly) --- #
+voice = voice_style_names[0]
 
 # --- 4. Synthesize Speech --- #
 for n in range(n_test):
@@ -100,11 +100,11 @@ for n in range(n_test):
     with timer("Generating speech from text"):
         if batch:
             wav, duration = text_to_speech.batch(
-                text_list, lang_list, style, total_step, speed
+                text_list, lang_list, voice, total_step, speed
             )
         else:
             wav, duration = text_to_speech(
-                text_list[0], lang_list[0], style, total_step, speed
+                text_list[0], lang_list[0], voice, total_step, speed
             )
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
