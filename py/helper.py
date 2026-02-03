@@ -77,7 +77,7 @@ class SupertonicTTS:
             voice: Voice name (e.g., 'M1', 'F1')
             
         Returns:
-            Style vector as numpy array with shape (1, 1, STYLE_DIM)
+            Style vector as numpy array with shape (1, num_embeddings, STYLE_DIM)
         """
         voice_path = os.path.join(self.model_path, "voices", f"{voice}.bin")
         if not os.path.exists(voice_path):
@@ -85,14 +85,8 @@ class SupertonicTTS:
 
         style_vec = np.fromfile(voice_path, dtype=np.float32)
         
-        # Validate the size
-        expected_size = self.STYLE_DIM
-        if style_vec.size != expected_size:
-            raise ValueError(
-                f"Voice file '{voice}' has incorrect size. "
-                f"Expected {expected_size} values, got {style_vec.size}"
-            )
-        
+        # Reshape to (1, num_embeddings, STYLE_DIM)
+        # The -1 allows automatic inference of the number of embeddings
         return style_vec.reshape(1, -1, self.STYLE_DIM)
 
     def generate(
