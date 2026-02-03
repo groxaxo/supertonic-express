@@ -15,6 +15,7 @@ print("Testing voice file loading with 101 embeddings × 128 dimensions...")
 STYLE_DIM = 128
 NUM_EMBEDDINGS = 101
 TOTAL_VALUES = NUM_EMBEDDINGS * STYLE_DIM  # 12928
+SEPARATOR_WIDTH = 50
 
 # Create temporary voice file
 with tempfile.TemporaryDirectory() as tmpdir:
@@ -50,7 +51,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
         print(f"✗ Reshape failed: {e}")
         sys.exit(1)
 
-print("\n" + "="*50)
+print("\n" + "="*SEPARATOR_WIDTH)
 print("All voice loading tests passed! ✓")
-print("="*50)
+print("="*SEPARATOR_WIDTH)
 print(f"\nThe fix correctly handles voice files with {NUM_EMBEDDINGS} embeddings × {STYLE_DIM} dimensions = {TOTAL_VALUES} values")
