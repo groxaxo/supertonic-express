@@ -95,7 +95,7 @@ class SupertonicTTS:
         *,
         voice: str = "M1",
         speed: float = 1.0,
-        steps: int = 5,
+        steps: int = 15,
         language: str = "en"
     ) -> list[np.ndarray]:
         """
@@ -105,7 +105,7 @@ class SupertonicTTS:
             text: List of text strings to synthesize
             voice: Voice style to use (default: "M1")
             speed: Speech speed multiplier (default: 1.0)
-            steps: Number of inference steps (default: 5, higher = better quality)
+            steps: Number of inference steps (default: 15, higher = better quality)
             language: Language code (default: "en")
             
         Returns:

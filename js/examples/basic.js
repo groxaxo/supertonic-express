@@ -20,7 +20,7 @@ async function main() {
   await tts.generateAndSave(text, 'output_basic.wav', {
     language: 'en',
     speaker_embeddings: 'https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX/resolve/main/voices/M1.bin',
-    num_inference_steps: 5,
+    num_inference_steps: 15,
     speed: 1.0,
   });
 
@@ -28,7 +28,7 @@ async function main() {
   await tts.generateAndSave(text, 'output_female.wav', {
     language: 'en',
     speaker_embeddings: 'https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX/resolve/main/voices/F1.bin',
-    num_inference_steps: 5,
+    num_inference_steps: 15,
     speed: 1.05,
   });
 
