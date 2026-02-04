@@ -105,7 +105,7 @@ export class SupertonicTTS {
       }
     }
     
-    // Validate language
+    // Validate the determined language
     if (!SupertonicTTS.LANGUAGES.includes(language)) {
       throw new Error(
         `Language '${language}' not supported. Choose from: ${SupertonicTTS.LANGUAGES.join(', ')}`

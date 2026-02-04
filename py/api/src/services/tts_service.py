@@ -4,6 +4,7 @@ import asyncio
 import io
 import json
 import os
+import re
 from typing import AsyncGenerator, Optional
 
 import numpy as np
@@ -87,7 +88,6 @@ class TTSService:
         
         # Auto-detect Spanish if text contains Spanish characters
         # Spanish-specific characters: á, é, í, ó, ú, ñ, ü, ¿, ¡
-        import re
         spanish_chars = re.compile(r'[áéíóúñüÁÉÍÓÚÑÜ¿¡]')
         if spanish_chars.search(text):
             logger.info("Auto-detected Spanish language based on text characters")
