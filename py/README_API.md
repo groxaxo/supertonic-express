@@ -162,8 +162,9 @@ curl http://localhost:8880/v1/audio/voices
 Adjust the `total_steps` parameter for quality vs speed:
 
 - `total_steps=2` - Fast, lower quality
-- `total_steps=5` - Balanced (default)
-- `total_steps=10` - High quality, slower
+- `total_steps=5` - Quick, balanced quality
+- `total_steps=15` - High quality (default)
+- `total_steps=20` - Maximum quality, slower
 
 ### GPU Acceleration
 

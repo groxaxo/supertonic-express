@@ -4,6 +4,7 @@ import asyncio
 import io
 import json
 import os
+import re
 from typing import AsyncGenerator, Optional
 
 import numpy as np
@@ -84,7 +85,15 @@ class TTSService:
         """Detect or validate language code"""
         if lang_code and lang_code in ["en", "ko", "es", "pt", "fr"]:
             return lang_code
-        # Default to English for now - could add language detection library
+        
+        # Auto-detect Spanish if text contains Spanish characters
+        # Spanish-specific characters: á, é, í, ó, ú, ñ, ü, ¿, ¡
+        spanish_chars = re.compile(r'[áéíóúñüÁÉÍÓÚÑÜ¿¡]')
+        if spanish_chars.search(text):
+            logger.info("Auto-detected Spanish language based on text characters")
+            return "es"
+        
+        # Default to English
         return "en"
 
     async def generate_audio(
