@@ -24,7 +24,7 @@ async function main() {
   const audioResults = await tts.generateBatch(prompts, {
     language: 'en',
     speaker_embeddings: 'https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX/resolve/main/voices/M1.bin',
-    num_inference_steps: 10,
+    num_inference_steps: 15,
     speed: 1.0,
   });
 

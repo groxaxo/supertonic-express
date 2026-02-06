@@ -77,7 +77,7 @@ class SupertonicTTS:
             voice: Voice name (e.g., 'M1', 'F1')
             
         Returns:
-            Style vector as numpy array with shape (1, 1, STYLE_DIM)
+            Style vector as numpy array with shape (1, num_embeddings, STYLE_DIM)
         """
         voice_path = os.path.join(self.model_path, "voices", f"{voice}.bin")
         if not os.path.exists(voice_path):
@@ -85,7 +85,12 @@ class SupertonicTTS:
 
         style_vec = np.fromfile(voice_path, dtype=np.float32)
         
+<<<<<<< HEAD
         # Reshape to (1, -1, STYLE_DIM) where -1 infers the middle dimension
+=======
+        # Reshape to (1, num_embeddings, STYLE_DIM)
+        # The -1 allows automatic inference of the number of embeddings
+>>>>>>> ab834b2912d6c9153f433e4d647f6f3388c96e6f
         return style_vec.reshape(1, -1, self.STYLE_DIM)
 
     def generate(
@@ -94,7 +99,7 @@ class SupertonicTTS:
         *,
         voice: str = "M1",
         speed: float = 1.0,
-        steps: int = 5,
+        steps: int = 15,
         language: str = "en"
     ) -> list[np.ndarray]:
         """
@@ -104,7 +109,7 @@ class SupertonicTTS:
             text: List of text strings to synthesize
             voice: Voice style to use (default: "M1")
             speed: Speech speed multiplier (default: 1.0)
-            steps: Number of inference steps (default: 5, higher = better quality)
+            steps: Number of inference steps (default: 15, higher = better quality)
             language: Language code (default: "en")
             
         Returns:

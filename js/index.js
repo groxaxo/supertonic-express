@@ -67,12 +67,24 @@ export class SupertonicTTS {
   }
 
   /**
+   * Detect if text contains Spanish characters
+   * @param {string} text - Text to check
+   * @returns {boolean} True if Spanish characters are detected
+   * @private
+   */
+  _detectSpanish(text) {
+    // Check for Spanish-specific characters: á, é, í, ó, ú, ñ, ü, ¿, ¡
+    const spanishChars = /[áéíóúñüÁÉÍÓÚÑÜ¿¡]/;
+    return spanishChars.test(text);
+  }
+
+  /**
    * Generate speech from text
    * @param {string} text - Input text to synthesize
    * @param {Object} options - Generation options
    * @param {string} options.language - Language code ('en', 'ko', 'es', 'pt', 'fr')
    * @param {string} options.speaker_embeddings - URL or path to speaker voice file
-   * @param {number} options.num_inference_steps - Number of denoising steps (1-50, default: 5)
+   * @param {number} options.num_inference_steps - Number of denoising steps (1-50, default: 15)
    * @param {number} options.speed - Speech speed multiplier (0.8-1.2, default: 1.0)
    * @returns {Promise<Object>} Audio object with save() and toBlob() methods
    */
@@ -81,8 +93,19 @@ export class SupertonicTTS {
       await this.initialize();
     }
 
-    // Validate language
-    const language = options.language || 'en';
+    // Auto-detect language if not provided
+    let language = options.language;
+    if (!language) {
+      // Check if text contains Spanish characters
+      if (this._detectSpanish(text)) {
+        language = 'es';
+        console.log('Auto-detected Spanish language based on text characters');
+      } else {
+        language = 'en';
+      }
+    }
+    
+    // Validate the determined language
     if (!SupertonicTTS.LANGUAGES.includes(language)) {
       throw new Error(
         `Language '${language}' not supported. Choose from: ${SupertonicTTS.LANGUAGES.join(', ')}`
@@ -95,7 +118,7 @@ export class SupertonicTTS {
     // Set default options
     const speaker_embeddings = options.speaker_embeddings || 
       'https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX/resolve/main/voices/M1.bin';
-    const num_inference_steps = options.num_inference_steps || 5;
+    const num_inference_steps = options.num_inference_steps || 15;
     const speed = options.speed || 1.0;
 
     console.log(`Generating speech: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);

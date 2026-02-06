@@ -24,7 +24,7 @@ def parse_args():
 
     # Synthesis parameters
     parser.add_argument(
-        "--total-step", type=int, default=5, help="Number of denoising steps"
+        "--total-step", type=int, default=15, help="Number of denoising steps"
     )
     parser.add_argument(
         "--speed",

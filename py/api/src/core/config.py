@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     
     # TTS Settings
     default_speed: float = 1.05
-    default_total_steps: int = 5
+    default_total_steps: int = 15
     sample_rate: int = 44100
     
     # CORS Settings
