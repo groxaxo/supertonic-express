@@ -35,6 +35,8 @@ class SupertonicTTS:
         """
         self.model_path = model_path
         self.sample_rate = self.SAMPLE_RATE
+        self.use_gpu = use_gpu
+        self.device = "cuda" if use_gpu else "cpu"
         
         # Initialize tokenizer with error handling
         try:
@@ -85,13 +87,14 @@ class SupertonicTTS:
 
         style_vec = np.fromfile(voice_path, dtype=np.float32)
         
-<<<<<<< HEAD
         # Reshape to (1, -1, STYLE_DIM) where -1 infers the middle dimension
-=======
-        # Reshape to (1, num_embeddings, STYLE_DIM)
-        # The -1 allows automatic inference of the number of embeddings
->>>>>>> ab834b2912d6c9153f433e4d647f6f3388c96e6f
         return style_vec.reshape(1, -1, self.STYLE_DIM)
+
+    def _to_ort(self, arr: np.ndarray) -> ort.OrtValue:
+        """Convert numpy array to OrtValue on the configured device."""
+        if self.use_gpu:
+            return ort.OrtValue.ortvalue_from_numpy(arr, "cuda", 0)
+        return ort.OrtValue.ortvalue_from_numpy(arr, "cpu", 0)
 
     def generate(
         self,
@@ -130,6 +133,95 @@ class SupertonicTTS:
         # 2. Prepare Style
         style = self._load_style(voice).repeat(batch_size, axis=0)
 
+        # Optimization: Use IO Binding for GPU to keep tensors on device
+        if self.use_gpu:
+            return self._generate_gpu(input_ids, attn_mask, style, speed, steps)
+        
+        # Fallback to CPU/Standard path
+        return self._generate_cpu(input_ids, attn_mask, style, speed, steps)
+
+    def _generate_gpu(self, input_ids, attn_mask, style, speed, steps):
+        """GPU optimized generation using IO Binding"""
+        
+        # Move inputs to GPU
+        input_ids_ort = self._to_ort(input_ids)
+        attn_mask_ort = self._to_ort(attn_mask)
+        style_ort = self._to_ort(style)
+
+        # 3. Text Encoding
+        # Bind inputs
+        io_binding = self.text_encoder.io_binding()
+        io_binding.bind_ortvalue_input("input_ids", input_ids_ort)
+        io_binding.bind_ortvalue_input("attention_mask", attn_mask_ort)
+        io_binding.bind_ortvalue_input("style", style_ort)
+        
+        # Bind outputs: last_hidden_state (keep on GPU), raw_durations (need on CPU for sizing)
+        io_binding.bind_output("last_hidden_state", "cuda")
+        io_binding.bind_output("durations", "cpu") # Raw durations needed for latent calc
+        
+        self.text_encoder.run_with_iobinding(io_binding)
+        outputs = io_binding.get_outputs()
+        last_hidden_state_ort = outputs[0] # OrtValue on GPU
+        raw_durations = outputs[1].numpy() # Numpy on CPU
+        
+        durations = (raw_durations / speed * self.SAMPLE_RATE).astype(np.int64)
+
+        # 4. Latent Preparation (CPU Math)
+        latent_lengths = (durations + self.LATENT_SIZE - 1) // self.LATENT_SIZE
+        max_len = latent_lengths.max()
+        latent_mask = (np.arange(max_len) < latent_lengths[:, None]).astype(np.int64)
+        latents = np.random.randn(
+            len(durations), self.LATENT_DIM * self.CHUNK_COMPRESS_FACTOR, max_len
+        ).astype(np.float32)
+        latents *= latent_mask[:, None, :]
+
+        # Move prepared latents to GPU
+        latents_ort = self._to_ort(latents)
+        latent_mask_ort = self._to_ort(latent_mask)
+        num_inference_steps_ort = self._to_ort(np.full(len(durations), steps, dtype=np.float32))
+
+        # 5. Denoising Loop
+        # We need to reuse the IO Binding object if possible, or recreate efficiently
+        # Since we loop, preserving GPU residence is key.
+        
+        for step in range(steps):
+            timestep_ort = self._to_ort(np.full(len(durations), step, dtype=np.float32))
+            
+            io_binding = self.latent_denoiser.io_binding()
+            io_binding.bind_ortvalue_input("noisy_latents", latents_ort)
+            io_binding.bind_ortvalue_input("latent_mask", latent_mask_ort)
+            io_binding.bind_ortvalue_input("style", style_ort)
+            io_binding.bind_ortvalue_input("encoder_outputs", last_hidden_state_ort)
+            io_binding.bind_ortvalue_input("attention_mask", attn_mask_ort)
+            io_binding.bind_ortvalue_input("timestep", timestep_ort)
+            io_binding.bind_ortvalue_input("num_inference_steps", num_inference_steps_ort)
+            
+            # Output stays on GPU and becomes next input
+            io_binding.bind_output("denoised_latents", "cuda")
+            
+            self.latent_denoiser.run_with_iobinding(io_binding)
+            latents_ort = io_binding.get_outputs()[0]
+
+        # 6. Decode Latents to Audio
+        io_binding = self.voice_decoder.io_binding()
+        io_binding.bind_ortvalue_input("latents", latents_ort)
+        # Final output moves to CPU
+        io_binding.bind_output("waveform", "cpu")
+        
+        self.voice_decoder.run_with_iobinding(io_binding)
+        waveforms = io_binding.get_outputs()[0].numpy()
+
+        # 7. Post-process
+        results = []
+        for i, length in enumerate(latent_mask.sum(axis=1) * self.LATENT_SIZE):
+            length_int = int(length)
+            results.append(waveforms[i, :length_int])
+
+        return results
+
+    def _generate_cpu(self, input_ids, attn_mask, style, speed, steps):
+        """Standard CPU generation (Original Implementation)"""
+        
         # 3. Text Encoding
         last_hidden_state, raw_durations = self.text_encoder.run(
             None,
@@ -142,14 +234,14 @@ class SupertonicTTS:
         max_len = latent_lengths.max()
         latent_mask = (np.arange(max_len) < latent_lengths[:, None]).astype(np.int64)
         latents = np.random.randn(
-            batch_size, self.LATENT_DIM * self.CHUNK_COMPRESS_FACTOR, max_len
+            len(durations), self.LATENT_DIM * self.CHUNK_COMPRESS_FACTOR, max_len
         ).astype(np.float32)
         latents *= latent_mask[:, None, :]
 
         # 5. Denoising Loop
-        num_inference_steps = np.full(batch_size, steps, dtype=np.float32)
+        num_inference_steps = np.full(len(durations), steps, dtype=np.float32)
         for step in range(steps):
-            timestep = np.full(batch_size, step, dtype=np.float32)
+            timestep = np.full(len(durations), step, dtype=np.float32)
             latents = self.latent_denoiser.run(
                 None,
                 {
@@ -166,10 +258,9 @@ class SupertonicTTS:
         # 6. Decode Latents to Audio
         waveforms = self.voice_decoder.run(None, {"latents": latents})[0]
 
-        # 7. Post-process: Trim padding and return list of arrays
+        # 7. Post-process
         results = []
         for i, length in enumerate(latent_mask.sum(axis=1) * self.LATENT_SIZE):
-            # Cast to int to avoid indexing issues
             length_int = int(length)
             results.append(waveforms[i, :length_int])
 

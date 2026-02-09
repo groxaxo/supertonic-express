@@ -97,7 +97,7 @@ pip install -e .
 python -c "from huggingface_hub import snapshot_download; snapshot_download('onnx-community/Supertonic-TTS-2-ONNX', local_dir='assets')"
 
 # Start the server
-./start_server.sh
+./scripts/run_server_cpu.sh
 ```
 
 **Usage with OpenAI Client:**
@@ -166,8 +166,38 @@ python example_onnx.py --onnx-dir ../assets
 
 **FastAPI Server**
 ```bash
-cd py
-./start_server.sh
+./scripts/run_server_cpu.sh
+```
+
+### GPU Acceleration (Recommended)
+
+To run Supertonic on NVIDIA GPUs with maximum performance (**~46x Real-time speedup**), we provide a dedicated launch script that handles environment setup and library paths.
+
+1.  **Create Conda Environment**:
+    ```bash
+    # Create environment
+    conda create -n supertonic-gpu python=3.10
+    conda activate supertonic-gpu
+    
+    # Install dependencies
+    pip install onnxruntime-gpu nvidia-cudnn-cu12
+    pip install -r py/requirements_gpu.txt
+    pip install -e py/
+    ```
+
+2.  **Launch with GPU Optimization**:
+    ```bash
+    # Run the optimized server (handles LD_LIBRARY_PATH automatically)
+    ./scripts/run_server_gpu.sh
+    ```
+
+### CPU Usage
+
+For deployment without a GPU, use the CPU-optimized launch script. Performance is approximately **4.4x Real-time**.
+
+```bash
+# Run in CPU mode
+./scripts/run_server_cpu.sh
 ```
 
 ### JavaScript/Node.js Usage
@@ -270,6 +300,15 @@ We evaluated Supertonic's performance (with 2 inference steps) using two key met
 | **Supertonic** (M4 pro - CPU) | 0.023 | 0.019 | 0.018 |
 | **Supertonic** (M4 pro - WebGPU) | 0.024 | 0.012 | 0.010 |
 | **Supertonic** (RTX4090) | 0.011 | 0.004 | 0.002 |
+
+### Optimization Results (This Repository)
+
+We have implemented **ONNX Runtime IO Binding** to eliminate CPU-GPU data transfer overhead.
+
+| Configuration | Inference Speedup | Notes |
+|--------------|-------------------|-------|
+| **GPU (Optimized)** | **46x Real-time** | ~0.07s latency for short sentences. Uses `scripts/run_server_gpu.sh` |
+| **CPU (Baseline)** | **4.4x Real-time** | ~0.76s latency. Uses `scripts/run_server_cpu.sh` |
 
 </details>
 

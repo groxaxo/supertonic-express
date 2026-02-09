@@ -83,7 +83,7 @@ python example_onnx.py \
 Start the OpenAI-compatible API server:
 
 ```bash
-./start_server.sh
+../scripts/run_server_cpu.sh
 ```
 
 See [README_API.md](README_API.md) for full API documentation.

@@ -39,7 +39,7 @@ cd py
 3. **Start the server:**
 
 ```bash
-./start_server.sh
+../scripts/run_server_cpu.sh
 ```
 
 Or manually:
