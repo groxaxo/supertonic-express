@@ -15,14 +15,14 @@ router = APIRouter(tags=["OpenAI Compatible"])
 async def create_speech(request: OpenAISpeechRequest, client_request: Request):
     """
     OpenAI-compatible text-to-speech endpoint.
-    
+
     Generates audio from text input using Supertonic TTS models.
     Compatible with OpenAI's TTS API format.
     """
     try:
         # Get TTS service
         tts_service = await get_tts_service()
-        
+
         # Validate voice exists
         available_voices = await tts_service.get_available_voices()
         if request.voice not in available_voices:
@@ -33,7 +33,7 @@ async def create_speech(request: OpenAISpeechRequest, client_request: Request):
                     "message": f"Voice '{request.voice}' not found. Available voices: {', '.join(available_voices)}",
                 },
             )
-        
+
         # Set content type based on format
         content_types = {
             "mp3": "audio/mpeg",
@@ -44,42 +44,64 @@ async def create_speech(request: OpenAISpeechRequest, client_request: Request):
             "pcm": "audio/pcm",
         }
         content_type = content_types.get(request.response_format, "audio/mpeg")
-        
+
         if request.stream:
             # Streaming response
             async def audio_stream():
                 try:
-                    # Generate complete audio first (convert to target format once)
-                    audio_data = await tts_service.generate_audio(
+                    # Stream chunk by chunk (sentence by sentence)
+                    # This prevents OOM on long texts and provides lower latency
+                    chunk_index = 0
+                    async for wav_chunk in tts_service.generate_audio_stream(
                         text=request.input,
                         voice=request.voice,
                         speed=request.speed,
                         lang_code=request.lang_code,
                         total_steps=request.total_steps,
-                    )
-                    
-                    # Convert to requested format once before streaming
-                    if request.response_format != "wav":
-                        audio_data = convert_audio(
-                            audio_data,
-                            request.response_format,
-                            tts_service.sample_rate,
-                        )
-                    
-                    # Stream the converted audio in chunks
-                    chunk_size = 8192
-                    for i in range(0, len(audio_data), chunk_size):
+                    ):
                         # Check if client disconnected
                         if await client_request.is_disconnected():
                             logger.info("Client disconnected, stopping stream")
                             break
-                        
-                        yield audio_data[i : i + chunk_size]
-                        
+
+                        # Handle format conversion per chunk
+                        if request.response_format == "wav":
+                            # WAV streaming: First chunk includes header, subsequent chunks are raw PCM
+                            # Note: This produces a playable but technically invalid WAV file
+                            # (header size won't match actual data). Use opus/aac for proper streaming.
+                            if chunk_index == 0:
+                                yield wav_chunk
+                            else:
+                                pcm_data = convert_audio(
+                                    wav_chunk, "pcm", tts_service.sample_rate
+                                )
+                                yield pcm_data
+
+                        elif request.response_format == "pcm":
+                            # Raw PCM - just strip WAV header
+                            pcm_data = convert_audio(
+                                wav_chunk, "pcm", tts_service.sample_rate
+                            )
+                            yield pcm_data
+
+                        else:
+                            # Opus, AAC, MP3, FLAC: These formats support proper stream concatenation
+                            # Each encoded chunk can be concatenated to form a valid file
+                            converted_chunk = convert_audio(
+                                wav_chunk,
+                                request.response_format,
+                                tts_service.sample_rate,
+                            )
+                            yield converted_chunk
+
+                        chunk_index += 1
+
+                    logger.info(f"Streamed {chunk_index} audio chunks")
+
                 except Exception as e:
                     logger.error(f"Streaming error: {e}")
-                    raise
-            
+                    # Can't raise HTTP exception here as response has started
+
             return StreamingResponse(
                 audio_stream(),
                 media_type=content_type,
@@ -98,7 +120,7 @@ async def create_speech(request: OpenAISpeechRequest, client_request: Request):
                 lang_code=request.lang_code,
                 total_steps=request.total_steps,
             )
-            
+
             # Convert to requested format
             if request.response_format != "wav":
                 audio_data = convert_audio(
@@ -106,7 +128,7 @@ async def create_speech(request: OpenAISpeechRequest, client_request: Request):
                     request.response_format,
                     tts_service.sample_rate,
                 )
-            
+
             return Response(
                 content=audio_data,
                 media_type=content_type,
@@ -114,7 +136,7 @@ async def create_speech(request: OpenAISpeechRequest, client_request: Request):
                     "Content-Disposition": f'attachment; filename="speech.{request.response_format}"',
                 },
             )
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -132,14 +154,14 @@ async def create_speech(request: OpenAISpeechRequest, client_request: Request):
 async def list_voices():
     """
     List available voices.
-    
+
     Returns a list of all available voice styles that can be used
     for text-to-speech generation.
     """
     try:
         tts_service = await get_tts_service()
         voices = await tts_service.get_available_voices()
-        
+
         # Create voice info objects
         voice_info_list = []
         for voice_name in voices:
@@ -147,7 +169,7 @@ async def list_voices():
             lang = "en"  # Default
             if voice_name.startswith("M") or voice_name.startswith("F"):
                 lang = "en"
-            
+
             voice_info_list.append(
                 VoiceInfo(
                     name=voice_name,
@@ -155,9 +177,9 @@ async def list_voices():
                     description=f"Supertonic voice style: {voice_name}",
                 )
             )
-        
+
         return VoicesResponse(voices=voice_info_list)
-    
+
     except Exception as e:
         logger.error(f"Error listing voices: {e}")
         raise HTTPException(

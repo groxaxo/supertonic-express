@@ -5,8 +5,9 @@ OpenAI-compatible FastAPI server for Supertonic TTS.
 ## Features
 
 - ✅ **OpenAI-Compatible API** - Drop-in replacement for OpenAI TTS API
-- ✅ **Streaming Support** - Real-time audio streaming
-- ✅ **Multiple Formats** - MP3, Opus, AAC, FLAC, WAV, PCM
+- ✅ **Smart Streaming** - Automatically chunks long text for unlimited length generation
+- ✅ **Multiple Formats** - Opus (default), AAC, MP3, FLAC, WAV, PCM
+- ✅ **WhatsApp Compatible** - Opus and AAC formats work with messaging apps
 - ✅ **Multiple Voices** - Various male and female voice styles
 - ✅ **Multi-Language** - English, Korean, Spanish, Portuguese, French
 - ✅ **CPU & GPU Support** - Optimized for both CPU and GPU
@@ -80,7 +81,7 @@ response = client.audio.speech.create(
     input="Hello, this is Supertonic text to speech!"
 )
 
-response.stream_to_file("output.mp3")
+response.stream_to_file("output.opus")  # Opus is the default format
 ```
 
 ### cURL
@@ -91,13 +92,15 @@ curl -X POST http://localhost:8880/v1/audio/speech \
   -d '{
     "model": "supertonic",
     "input": "Hello world!",
-    "voice": "M1",
-    "response_format": "mp3"
+    "voice": "M1"
   }' \
-  --output speech.mp3
+  --output speech.opus  # Opus is the default format
 ```
 
-### Streaming
+### Streaming (Recommended for Long Text)
+
+The server automatically chunks long text into sentences and streams audio chunks.
+This prevents memory issues and provides lower latency for the first audio bytes.
 
 ```python
 from openai import OpenAI
@@ -107,14 +110,18 @@ client = OpenAI(
     api_key="not-needed"
 )
 
+# Works with any length text - automatically chunked and streamed
 with client.audio.speech.with_streaming_response.create(
     model="supertonic",
     voice="M1",
-    input="This will be streamed!",
-    response_format="opus"
+    input="This is a very long text that will be automatically split into chunks..."
 ) as response:
     response.stream_to_file("output.opus")
 ```
+
+**Recommended formats for streaming:**
+- **Opus** (default) - Best quality/size ratio, WhatsApp compatible
+- **AAC** - Wide compatibility, works with messaging apps
 
 ## API Endpoints
 

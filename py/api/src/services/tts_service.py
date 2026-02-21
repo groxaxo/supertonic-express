@@ -85,14 +85,14 @@ class TTSService:
         """Detect or validate language code"""
         if lang_code and lang_code in ["en", "ko", "es", "pt", "fr"]:
             return lang_code
-        
+
         # Auto-detect Spanish if text contains Spanish characters
         # Spanish-specific characters: á, é, í, ó, ú, ñ, ü, ¿, ¡
-        spanish_chars = re.compile(r'[áéíóúñüÁÉÍÓÚÑÜ¿¡]')
+        spanish_chars = re.compile(r"[áéíóúñüÁÉÍÓÚÑÜ¿¡]")
         if spanish_chars.search(text):
             logger.info("Auto-detected Spanish language based on text characters")
             return "es"
-        
+
         # Default to English
         return "en"
 
@@ -141,25 +141,33 @@ class TTSService:
         speed: float = 1.0,
         lang_code: Optional[str] = None,
         total_steps: Optional[int] = None,
-        chunk_size: int = 8192,
     ) -> AsyncGenerator[bytes, None]:
         """
         Generate audio in streaming chunks.
-        
-        Note: This implementation generates complete audio and streams it in chunks.
-        For very long texts, consider using the chunk_text functionality to split
-        text into smaller segments and generate them sequentially.
-        """
-        # Generate complete audio
-        audio_data = await self.generate_audio(
-            text, voice, speed, lang_code, total_steps
-        )
+        Automatically splits long text into sentences to avoid OOM.
+        Yields complete WAV audio for each text chunk.
 
-        # Stream the audio in chunks
-        for i in range(0, len(audio_data), chunk_size):
-            yield audio_data[i : i + chunk_size]
-            # Small delay to simulate streaming and allow event loop to process
-            await asyncio.sleep(0.001)
+        Note: Each yielded chunk is a complete WAV file. The router handles
+        combining them appropriately based on the output format.
+        """
+        if not self._initialized:
+            await self.initialize()
+
+        # Split text into chunks using helper to prevent OOM on long texts
+        # 300 chars is a safe limit for the model
+        text_chunks = chunk_text(text, max_len=300)
+
+        logger.info(f"Streaming {len(text_chunks)} text chunks for long-form audio")
+
+        for i, chunk in enumerate(text_chunks):
+            # Generate audio for this chunk (returns WAV bytes)
+            audio_data = await self.generate_audio(
+                chunk, voice, speed, lang_code, total_steps
+            )
+            logger.debug(
+                f"Generated chunk {i + 1}/{len(text_chunks)} ({len(chunk)} chars)"
+            )
+            yield audio_data
 
     @property
     def sample_rate(self) -> int:
