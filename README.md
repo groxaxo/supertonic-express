@@ -1,19 +1,24 @@
-# Supertonic — Lightning Fast, On-Device TTS
+# Supertonic Express — Lightning Fast, On-Device TTS
 
 [![v2 Demo](https://img.shields.io/badge/🤗%20v2-Demo-yellow)](https://huggingface.co/spaces/Supertone/supertonic-2)
 [![v2 Models](https://img.shields.io/badge/🤗%20v2-Models-blue)](https://huggingface.co/Supertone/supertonic-2)
 [![ONNX Model](https://img.shields.io/badge/🤗%20ONNX-Model-green)](https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX)
+[![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](py/)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js)](js/)
 
 <p align="center">
-  <img src="img/supertonic_preview_0.1.jpg" alt="Supertonic Banner">
+  <img src="img/banner.svg" alt="Supertonic Express Banner">
 </p>
 
-**Supertonic** is a lightning-fast, on-device text-to-speech system designed for **extreme performance** with minimal computational overhead. Powered by ONNX Runtime, it runs entirely on your device—no cloud, no API calls, no privacy concerns.
+**Supertonic Express** is a lightning-fast, on-device text-to-speech system designed for **extreme performance** with minimal computational overhead. Powered by ONNX Runtime, it runs entirely on your device—no cloud, no API calls, no privacy concerns.
 
-This repository provides a **Python implementation** using the optimized ONNX model from [onnx-community/Supertonic-TTS-2-ONNX](https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX).
+This repository provides both a **Python implementation** (with a production-ready FastAPI server) and a **JavaScript/Node.js implementation**, using the optimized ONNX model from [onnx-community/Supertonic-TTS-2-ONNX](https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX).
 
 ### 📰 Update News
 
+- **2026.02.22** - 🎉 **Smart Text Chunking** added! Automatic sentence-based splitting prevents OOM errors and enables unlimited-length audio generation
+- **2026.02.22** - 🎉 **Improved Streaming**: Chunk-by-chunk audio streaming reduces time-to-first-byte for long texts. Default format changed to **Opus** (WhatsApp-compatible, 64k Ogg)
 - **2026.01.13** - 🎉 Migrated to use **onnx-community/Supertonic-TTS-2-ONNX** model with Transformers tokenizer for improved compatibility
 - **2026.01.13** - 🎉 **FastAPI Server** released! OpenAI-compatible REST API with streaming support, multiple audio formats, and Docker deployment. Perfect for Open-WebUI integration! [API Docs](docs/API.md)
 - **2026.01.06** - 🎉 **Supertonic 2** released with multilingual support! Now supports English (`en`), Korean (`ko`), Spanish (`es`), Portuguese (`pt`), and French (`fr`). [Demo](https://huggingface.co/spaces/Supertone/supertonic-2) | [Models](https://huggingface.co/Supertone/supertonic-2)
@@ -81,8 +86,9 @@ We now provide a production-ready **FastAPI server** with OpenAI-compatible endp
 
 **Features:**
 - ✅ OpenAI-compatible `/v1/audio/speech` endpoint
-- ✅ Streaming audio generation
-- ✅ Multiple audio formats (MP3, Opus, AAC, FLAC, WAV, PCM)
+- ✅ Chunk-by-chunk streaming with low time-to-first-byte
+- ✅ **Smart text chunking** — unlimited-length audio, no OOM errors
+- ✅ Multiple audio formats (MP3, **Opus** [default], AAC, FLAC, WAV, PCM)
 - ✅ Docker support (CPU & GPU)
 - ✅ **Works out-of-the-box with Open-WebUI** 🎉
 
@@ -113,10 +119,11 @@ client = OpenAI(
 response = client.audio.speech.create(
     model="supertonic",
     voice="M1",
-    input="Hello from Supertonic!"
+    input="Hello from Supertonic!",
+    response_format="opus"  # Default; WhatsApp-compatible Ogg/Opus
 )
 
-response.stream_to_file("output.mp3")
+response.stream_to_file("output.opus")
 ```
 
 📚 **Documentation:**
