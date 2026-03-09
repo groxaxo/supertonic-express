@@ -25,6 +25,50 @@ class SupertonicTTS:
     LATENT_SIZE = BASE_CHUNK_SIZE * CHUNK_COMPRESS_FACTOR
     LANGUAGES = ["en", "ko", "es", "pt", "fr"]
 
+    @staticmethod
+    def _get_env_int(name: str) -> Optional[int]:
+        """Read a positive integer environment variable."""
+        value = os.getenv(name)
+        if value is None:
+            return None
+        try:
+            parsed = int(value)
+        except ValueError:
+            return None
+        return parsed if parsed > 0 else None
+
+    @classmethod
+    def _recommended_cpu_threads(cls) -> int:
+        """Match the JS default: use ~75% of available CPU cores."""
+        cpu_count = os.cpu_count() or 1
+        return max(1, int(np.ceil(cpu_count * 0.75)))
+
+    @classmethod
+    def _create_session_options(cls, use_gpu: bool) -> ort.SessionOptions:
+        """Create ONNX Runtime session options tuned for CPU execution."""
+        sess_options = ort.SessionOptions()
+        sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+        if use_gpu:
+            return sess_options
+
+        intra_threads = (
+            cls._get_env_int("ORT_INTRA_OP_NUM_THREADS")
+            or cls._get_env_int("OMP_NUM_THREADS")
+            or cls._recommended_cpu_threads()
+        )
+        inter_threads = cls._get_env_int("ORT_INTER_OP_NUM_THREADS")
+        execution_mode = os.getenv("ORT_EXECUTION_MODE")
+
+        sess_options.intra_op_num_threads = intra_threads
+        if inter_threads is not None:
+            sess_options.inter_op_num_threads = inter_threads
+
+        if execution_mode == "1" or (inter_threads is not None and inter_threads > 1):
+            sess_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
+
+        return sess_options
+
     def __init__(self, model_path: str, use_gpu: bool = False):
         """
         Initialize SupertonicTTS model.
@@ -58,16 +102,20 @@ class SupertonicTTS:
 
         # Load ONNX sessions
         onnx_dir = os.path.join(self.model_path, "onnx")
+        sess_options = self._create_session_options(use_gpu)
         self.text_encoder = ort.InferenceSession(
             os.path.join(onnx_dir, "text_encoder.onnx"),
+            sess_options=sess_options,
             providers=providers
         )
         self.latent_denoiser = ort.InferenceSession(
             os.path.join(onnx_dir, "latent_denoiser.onnx"),
+            sess_options=sess_options,
             providers=providers
         )
         self.voice_decoder = ort.InferenceSession(
             os.path.join(onnx_dir, "voice_decoder.onnx"),
+            sess_options=sess_options,
             providers=providers
         )
 
@@ -213,7 +261,8 @@ class SupertonicTTS:
 
         # 7. Post-process
         results = []
-        for i, length in enumerate(latent_mask.sum(axis=1) * self.LATENT_SIZE):
+        output_lengths = latent_lengths * self.LATENT_SIZE
+        for i, length in enumerate(output_lengths):
             length_int = int(length)
             results.append(waveforms[i, :length_int])
 
@@ -240,8 +289,10 @@ class SupertonicTTS:
 
         # 5. Denoising Loop
         num_inference_steps = np.full(len(durations), steps, dtype=np.float32)
+        timesteps = np.repeat(
+            np.arange(steps, dtype=np.float32)[:, None], len(durations), axis=1
+        )
         for step in range(steps):
-            timestep = np.full(len(durations), step, dtype=np.float32)
             latents = self.latent_denoiser.run(
                 None,
                 {
@@ -250,7 +301,7 @@ class SupertonicTTS:
                     "style": style,
                     "encoder_outputs": last_hidden_state,
                     "attention_mask": attn_mask,
-                    "timestep": timestep,
+                    "timestep": timesteps[step],
                     "num_inference_steps": num_inference_steps,
                 },
             )[0]
@@ -260,7 +311,8 @@ class SupertonicTTS:
 
         # 7. Post-process
         results = []
-        for i, length in enumerate(latent_mask.sum(axis=1) * self.LATENT_SIZE):
+        output_lengths = latent_lengths * self.LATENT_SIZE
+        for i, length in enumerate(output_lengths):
             length_int = int(length)
             results.append(waveforms[i, :length_int])
 
