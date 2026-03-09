@@ -289,9 +289,7 @@ class SupertonicTTS:
 
         # 5. Denoising Loop
         num_inference_steps = np.full(len(durations), steps, dtype=np.float32)
-        timesteps = np.repeat(
-            np.arange(steps, dtype=np.float32)[:, None], len(durations), axis=1
-        )
+        timesteps = [np.full(len(durations), step, dtype=np.float32) for step in range(steps)]
         for step in range(steps):
             latents = self.latent_denoiser.run(
                 None,
