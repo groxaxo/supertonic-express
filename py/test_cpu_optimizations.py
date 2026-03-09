@@ -37,7 +37,8 @@ def test_init_passes_optimized_session_options_to_all_cpu_sessions():
         onnx_dir = os.path.join(model_dir, "onnx")
         os.makedirs(onnx_dir)
         for filename in ("text_encoder.onnx", "latent_denoiser.onnx", "voice_decoder.onnx"):
-            open(os.path.join(onnx_dir, filename), "wb").close()
+            with open(os.path.join(onnx_dir, filename), "wb"):
+                pass
 
         created_sessions = []
 
