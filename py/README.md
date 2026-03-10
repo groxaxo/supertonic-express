@@ -134,6 +134,11 @@ Key parameters:
 - `BASE_CHUNK_SIZE`: 512
 - `CHUNK_COMPRESS_FACTOR`: 6
 
+CPU inference now enables ONNX Runtime graph optimizations automatically and honors these environment variables for AVX2-friendly tuning:
+- `OMP_NUM_THREADS` or `ORT_INTRA_OP_NUM_THREADS` for operator-level parallelism
+- `ORT_INTER_OP_NUM_THREADS` for parallel graph execution
+- `ORT_EXECUTION_MODE=1` to force ONNX Runtime parallel execution mode
+
 ## Examples
 
 See the following files for examples:
