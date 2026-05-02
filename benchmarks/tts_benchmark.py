@@ -20,8 +20,9 @@ from profile_utils import (
 )
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-PY_ROOT = REPO_ROOT / "py"
+SCRIPT_REPO_ROOT = Path(__file__).resolve().parents[1]
+TARGET_REPO_ROOT = Path(os.getenv("SUPERTONIC_REPO_ROOT", str(SCRIPT_REPO_ROOT))).resolve()
+PY_ROOT = TARGET_REPO_ROOT / "py"
 if str(PY_ROOT) not in sys.path:
     sys.path.insert(0, str(PY_ROOT))
 
@@ -32,7 +33,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Benchmark Supertonic TTS generation.")
     parser.add_argument("--label", required=True, help="Benchmark label, such as baseline or optimized.")
     parser.add_argument("--device", choices=["cpu", "gpu"], default="cpu")
-    parser.add_argument("--onnx-dir", default=str(REPO_ROOT / "assets"))
+    parser.add_argument("--onnx-dir", default=str(TARGET_REPO_ROOT / "assets"))
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--results", required=True)
     parser.add_argument("--profile-out", required=True)
@@ -89,12 +90,16 @@ def save_profile(path: str | Path, aggregate: list[dict[str, Any]], records: lis
 
 def main() -> int:
     args = parse_args()
-    os.chdir(REPO_ROOT)
+    os.chdir(SCRIPT_REPO_ROOT)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     command = " ".join(sys.argv)
-    environment = collect_environment(command=command, package_manager=args.package_manager)
+    environment = collect_environment(
+        command=command,
+        package_manager=args.package_manager,
+        repo_root=TARGET_REPO_ROOT,
+    )
     profiler = StageProfiler()
 
     model_start = time.perf_counter()
@@ -178,6 +183,8 @@ def main() -> int:
         "device": args.device,
         "created_at_unix": time.time(),
         "environment": environment,
+        "script_repo_root": str(SCRIPT_REPO_ROOT),
+        "target_repo_root": str(TARGET_REPO_ROOT),
         "onnx_dir": args.onnx_dir,
         "providers": providers,
         "model_load_time_seconds": model_load_time,

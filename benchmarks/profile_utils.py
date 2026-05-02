@@ -74,7 +74,13 @@ def package_version(name: str) -> str | None:
         return None
 
 
-def collect_environment(command: str, package_manager: str) -> dict[str, Any]:
+def collect_environment(
+    command: str,
+    package_manager: str,
+    repo_root: str | Path | None = None,
+) -> dict[str, Any]:
+    repo_root_path = Path(repo_root).resolve() if repo_root is not None else None
+
     nvidia_csv = run_text(
         [
             "nvidia-smi",
@@ -115,9 +121,18 @@ def collect_environment(command: str, package_manager: str) -> dict[str, Any]:
         "transformers_version": package_version("transformers"),
         "soundfile_version": package_version("soundfile"),
         "librosa_version": package_version("librosa"),
-        "commit_hash": run_text(["git", "rev-parse", "HEAD"]),
-        "branch": run_text(["git", "branch", "--show-current"]),
+        "commit_hash": _git_text(repo_root_path, ["rev-parse", "HEAD"]),
+        "branch": _git_text(repo_root_path, ["branch", "--show-current"]),
+        "repo_root": str(repo_root_path) if repo_root_path is not None else None,
     }
+
+
+def _git_text(repo_root: Path | None, args: list[str]) -> str | None:
+    command = ["git"]
+    if repo_root is not None:
+        command.extend(["-C", str(repo_root)])
+    command.extend(args)
+    return run_text(command)
 
 
 def _extract_cuda_version(nvidia_smi_output: str | None) -> str | None:

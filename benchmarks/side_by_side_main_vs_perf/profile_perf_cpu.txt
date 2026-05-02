@@ -1,0 +1,28 @@
+Supertonic TTS benchmark profile
+
+Aggregate component timings:
+- latent_denoiser: 7.565029s (135 calls, avg 0.056037s)
+- voice_decoder: 1.868466s (9 calls, avg 0.207607s)
+- text_encoder: 0.242294s (9 calls, avg 0.026922s)
+
+Per-sample component timings:
+word_count=10 path=/home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/perf_cpu/010_words.wav
+  - latent_denoiser: 0.551231s (15 calls)
+  - voice_decoder: 0.099387s (1 calls)
+  - text_encoder: 0.014866s (1 calls)
+word_count=20 path=/home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/perf_cpu/020_words.wav
+  - latent_denoiser: 0.717046s (15 calls)
+  - voice_decoder: 0.169791s (1 calls)
+  - text_encoder: 0.025575s (1 calls)
+word_count=30 path=/home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/perf_cpu/030_words.wav
+  - latent_denoiser: 0.962185s (15 calls)
+  - voice_decoder: 0.260199s (1 calls)
+  - text_encoder: 0.032247s (1 calls)
+word_count=50 path=/home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/perf_cpu/050_words.wav
+  - latent_denoiser: 1.698791s (30 calls)
+  - voice_decoder: 0.426564s (2 calls)
+  - text_encoder: 0.057531s (2 calls)
+word_count=100 path=/home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/perf_cpu/100_words.wav
+  - latent_denoiser: 3.635776s (60 calls)
+  - voice_decoder: 0.912524s (4 calls)
+  - text_encoder: 0.112076s (4 calls)

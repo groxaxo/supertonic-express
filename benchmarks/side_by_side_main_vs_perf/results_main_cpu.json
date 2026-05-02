@@ -1,0 +1,307 @@
+{
+  "aggregate_component_profile": [
+    {
+      "average_seconds": 0.06602923820081978,
+      "component": "latent_denoiser",
+      "count": 135,
+      "time_seconds": 8.91394715711067
+    },
+    {
+      "average_seconds": 0.24307329544454762,
+      "component": "voice_decoder",
+      "count": 9,
+      "time_seconds": 2.1876596590009285
+    },
+    {
+      "average_seconds": 0.03563103300338197,
+      "component": "text_encoder",
+      "count": 9,
+      "time_seconds": 0.32067929703043774
+    }
+  ],
+  "created_at_unix": 1777761498.888016,
+  "device": "cpu",
+  "environment": {
+    "branch": null,
+    "command": "/home/op/supertonic-express/benchmarks/tts_benchmark.py --label main-cpu --device cpu --onnx-dir /home/op/supertonic-express/assets --output-dir /home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/main_cpu --results /home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/results_main_cpu.json --profile-out /home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/profile_main_cpu.txt --warmup-runs 1 --steps 15 --speed 1.05 --voice M1 --seed 20260502 --package-manager conda",
+    "commit_hash": "090f6574d0beb576e17864063cc37fb99524eb27",
+    "cpu_count": 8,
+    "cpu_flags_contains_avx2": true,
+    "cpu_model": "Intel(R) Core(TM) i7-4790 CPU @ 3.60GHz",
+    "cuda_version_from_nvidia_smi": "12.2",
+    "driver_version_from_nvidia_smi": "535.288.01",
+    "gpu_query": "NVIDIA GeForce GTX 750 Ti, 535.288.01, 2048 MiB",
+    "librosa_version": "0.11.0",
+    "machine": "x86_64",
+    "nvidia_smi": "Sun May  3 10:38:06 2026       \n+---------------------------------------------------------------------------------------+\n| NVIDIA-SMI 535.288.01             Driver Version: 535.288.01   CUDA Version: 12.2     |\n|-----------------------------------------+----------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id        Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |         Memory-Usage | GPU-Util  Compute M. |\n|                                         |                      |               MIG M. |\n|=========================================+======================+======================|\n|   0  NVIDIA GeForce GTX 750 Ti      Off | 00000000:01:00.0  On |                  N/A |\n| 40%   25C    P8               1W /  38W |    374MiB /  2048MiB |     44%      Default |\n|                                         |                      |                  N/A |\n+-----------------------------------------+----------------------+----------------------+\n                                                                                         \n+---------------------------------------------------------------------------------------+\n| Processes:                                                                            |\n|  GPU   GI   CI        PID   Type   Process name                            GPU Memory |\n|        ID   ID                                                             Usage      |\n|=======================================================================================|\n|    0   N/A  N/A      2034      G   /usr/lib/xorg/Xorg                          192MiB |\n|    0   N/A  N/A     71495      G   ...libexec/gnome-remote-desktop-daemon        1MiB |\n|    0   N/A  N/A     71530      G   /usr/bin/gnome-shell                         23MiB |\n|    0   N/A  N/A     73895      G   /usr/bin/file-roller                          9MiB |\n|    0   N/A  N/A     74435      G   /usr/bin/gnome-software                      14MiB |\n|    0   N/A  N/A    277331      G   /proc/self/exe                               49MiB |\n|    0   N/A  N/A    471116    C+G   ...cess-track-uuid=3190708988185955192       67MiB |\n+---------------------------------------------------------------------------------------+",
+    "onnxruntime_version": "1.23.1",
+    "os": "Linux-6.8.0-110-generic-x86_64-with-glibc2.39",
+    "package_manager": "conda",
+    "python": "3.11.15",
+    "python_executable": "/home/op/miniconda3/envs/supertonic-main-bench/bin/python",
+    "pytorch_version": null,
+    "ram": "total        used        free      shared  buff/cache   available\nMem:            31Gi        14Gi       373Mi       188Mi        16Gi        16Gi\nSwap:           14Gi          0B        14Gi",
+    "repo_root": "/home/op/supertonic-express-main",
+    "soundfile_version": "0.13.1",
+    "transformers_version": "5.7.0"
+  },
+  "label": "main-cpu",
+  "model_load_time_seconds": 0.3669711200054735,
+  "onnx_dir": "/home/op/supertonic-express/assets",
+  "providers": {
+    "latent_denoiser": [
+      "CPUExecutionProvider"
+    ],
+    "text_encoder": [
+      "CPUExecutionProvider"
+    ],
+    "voice_decoder": [
+      "CPUExecutionProvider"
+    ]
+  },
+  "records": [
+    {
+      "audio_duration_seconds": 5.294149659863946,
+      "audio_write_time_seconds": 0.008045068010687828,
+      "average_gpu_utilization_percent": null,
+      "component_profile": [
+        {
+          "average_seconds": 0.035578310868974464,
+          "component": "latent_denoiser",
+          "count": 15,
+          "time_seconds": 0.533674663034617
+        },
+        {
+          "average_seconds": 0.13555564799753483,
+          "component": "voice_decoder",
+          "count": 1,
+          "time_seconds": 0.13555564799753483
+        },
+        {
+          "average_seconds": 0.027194210997549817,
+          "component": "text_encoder",
+          "count": 1,
+          "time_seconds": 0.027194210997549817
+        }
+      ],
+      "cpu_utilization_percent_estimate": 76.35309447091211,
+      "device": "cpu",
+      "first_audio_latency_seconds": null,
+      "generation_wall_time_seconds": 0.6986464709916618,
+      "gpu_sample_count": 0,
+      "input_text": "Fast speech generation must stay clear, natural, stable, and measurable.",
+      "inverse_realtime_factor": 0.13196575765287608,
+      "label": "main-cpu",
+      "language": "en",
+      "model_load_time_seconds": 0.3669711200054735,
+      "output_path": "/home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/main_cpu/010_words.wav",
+      "peak_vram_mb": null,
+      "process_cpu_time_seconds": 4.317028938000001,
+      "process_maxrss_delta_mb": 11.375,
+      "process_maxrss_mb": 391.05859375,
+      "realtime_factor": 7.577723326004076,
+      "seed": 20260602,
+      "speed": 1.05,
+      "steps": 15,
+      "total_end_to_end_latency_seconds": 0.7066915390023496,
+      "voice": "M1",
+      "word_count": 10
+    },
+    {
+      "audio_duration_seconds": 8.777142857142858,
+      "audio_write_time_seconds": 0.009120154994889162,
+      "average_gpu_utilization_percent": null,
+      "component_profile": [
+        {
+          "average_seconds": 0.05794401226642852,
+          "component": "latent_denoiser",
+          "count": 15,
+          "time_seconds": 0.8691601839964278
+        },
+        {
+          "average_seconds": 0.20813378199818544,
+          "component": "voice_decoder",
+          "count": 1,
+          "time_seconds": 0.20813378199818544
+        },
+        {
+          "average_seconds": 0.024800990999210626,
+          "component": "text_encoder",
+          "count": 1,
+          "time_seconds": 0.024800990999210626
+        }
+      ],
+      "cpu_utilization_percent_estimate": 75.20376906619049,
+      "device": "cpu",
+      "first_audio_latency_seconds": null,
+      "generation_wall_time_seconds": 1.1055024550005328,
+      "gpu_sample_count": 0,
+      "input_text": "This benchmark checks whether the audio model can generate short responses quickly while preserving pronunciation, rhythm, and clarity.",
+      "inverse_realtime_factor": 0.12595242814133673,
+      "label": "main-cpu",
+      "language": "en",
+      "model_load_time_seconds": 0.3669711200054735,
+      "output_path": "/home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/main_cpu/020_words.wav",
+      "peak_vram_mb": null,
+      "process_cpu_time_seconds": 6.706247957999999,
+      "process_maxrss_delta_mb": 8.0,
+      "process_maxrss_mb": 399.05859375,
+      "realtime_factor": 7.939505532024013,
+      "seed": 20260603,
+      "speed": 1.05,
+      "steps": 15,
+      "total_end_to_end_latency_seconds": 1.114622609995422,
+      "voice": "M1",
+      "word_count": 20
+    },
+    {
+      "audio_duration_seconds": 13.165714285714285,
+      "audio_write_time_seconds": 0.013404015990090556,
+      "average_gpu_utilization_percent": null,
+      "component_profile": [
+        {
+          "average_seconds": 0.07591373120085336,
+          "component": "latent_denoiser",
+          "count": 15,
+          "time_seconds": 1.1387059680128004
+        },
+        {
+          "average_seconds": 0.29301381000550464,
+          "component": "voice_decoder",
+          "count": 1,
+          "time_seconds": 0.29301381000550464
+        },
+        {
+          "average_seconds": 0.0324691310088383,
+          "component": "text_encoder",
+          "count": 1,
+          "time_seconds": 0.0324691310088383
+        }
+      ],
+      "cpu_utilization_percent_estimate": 75.30278921992613,
+      "device": "cpu",
+      "first_audio_latency_seconds": null,
+      "generation_wall_time_seconds": 1.4680656970012933,
+      "gpu_sample_count": 0,
+      "input_text": "A realtime voice agent needs low latency, consistent audio quality, accurate pronunciation, and predictable performance across short and medium length replies during normal conversation.",
+      "inverse_realtime_factor": 0.11150672611771976,
+      "label": "main-cpu",
+      "language": "en",
+      "model_load_time_seconds": 0.3669711200054735,
+      "output_path": "/home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/main_cpu/030_words.wav",
+      "peak_vram_mb": null,
+      "process_cpu_time_seconds": 8.925053871,
+      "process_maxrss_delta_mb": 18.0,
+      "process_maxrss_mb": 417.05859375,
+      "realtime_factor": 8.968068876349944,
+      "seed": 20260604,
+      "speed": 1.05,
+      "steps": 15,
+      "total_end_to_end_latency_seconds": 1.4814697129913839,
+      "voice": "M1",
+      "word_count": 30
+    },
+    {
+      "audio_duration_seconds": 22.751836734693878,
+      "audio_write_time_seconds": 0.0197610510076629,
+      "average_gpu_utilization_percent": null,
+      "component_profile": [
+        {
+          "average_seconds": 0.06873377783437415,
+          "component": "latent_denoiser",
+          "count": 30,
+          "time_seconds": 2.0620133350312244
+        },
+        {
+          "average_seconds": 0.24772372199367965,
+          "component": "voice_decoder",
+          "count": 2,
+          "time_seconds": 0.4954474439873593
+        },
+        {
+          "average_seconds": 0.033266731501498725,
+          "component": "text_encoder",
+          "count": 2,
+          "time_seconds": 0.06653346300299745
+        }
+      ],
+      "cpu_utilization_percent_estimate": 74.58604150508863,
+      "device": "cpu",
+      "first_audio_latency_seconds": null,
+      "generation_wall_time_seconds": 2.6316239519946976,
+      "gpu_sample_count": 0,
+      "input_text": "This test measures whether the text to speech system can generate a useful spoken response fast enough for an interactive voice agent. The output should sound natural, remain intelligible, avoid skipped words, and maintain stable pacing while the benchmark records latency, throughput, memory usage, and transcription accuracy.",
+      "inverse_realtime_factor": 0.11566643971129505,
+      "label": "main-cpu",
+      "language": "en",
+      "model_load_time_seconds": 0.3669711200054735,
+      "output_path": "/home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/main_cpu/050_words.wav",
+      "peak_vram_mb": null,
+      "process_cpu_time_seconds": 15.820889157999996,
+      "process_maxrss_delta_mb": 18.0625,
+      "process_maxrss_mb": 435.12109375,
+      "realtime_factor": 8.64555010507813,
+      "seed": 20260605,
+      "speed": 1.05,
+      "steps": 15,
+      "total_end_to_end_latency_seconds": 2.6513850030023605,
+      "voice": "M1",
+      "word_count": 50
+    },
+    {
+      "audio_duration_seconds": 48.986666666666665,
+      "audio_write_time_seconds": 0.03528612499940209,
+      "average_gpu_utilization_percent": null,
+      "component_profile": [
+        {
+          "average_seconds": 0.07183988345059333,
+          "component": "latent_denoiser",
+          "count": 60,
+          "time_seconds": 4.3103930070356
+        },
+        {
+          "average_seconds": 0.2638772437530861,
+          "component": "voice_decoder",
+          "count": 4,
+          "time_seconds": 1.0555089750123443
+        },
+        {
+          "average_seconds": 0.042420375255460385,
+          "component": "text_encoder",
+          "count": 4,
+          "time_seconds": 0.16968150102184154
+        }
+      ],
+      "cpu_utilization_percent_estimate": 74.71480127099956,
+      "device": "cpu",
+      "first_audio_latency_seconds": null,
+      "generation_wall_time_seconds": 5.548888166988036,
+      "gpu_sample_count": 0,
+      "input_text": "This longer benchmark checks whether the optimized generation path remains stable when the assistant produces a complete spoken answer. The system should keep the model loaded, avoid unnecessary transfers between CPU and GPU, reduce repeated preprocessing work, and generate audio faster than the original implementation without damaging intelligibility. The output should preserve the meaning of the prompt, pronounce the words clearly, avoid hallucinated phrases, avoid missing clauses, and maintain a natural speaking rhythm. The final report must compare baseline and optimized generation times, realtime factors, memory usage, bottlenecks, code changes, and transcription accuracy measured with Parakeet.",
+      "inverse_realtime_factor": 0.11327343835713193,
+      "label": "main-cpu",
+      "language": "en",
+      "model_load_time_seconds": 0.3669711200054735,
+      "output_path": "/home/op/supertonic-express/benchmarks/side_by_side_main_vs_perf/main_cpu/100_words.wav",
+      "peak_vram_mb": null,
+      "process_cpu_time_seconds": 33.377989407,
+      "process_maxrss_delta_mb": 14.0546875,
+      "process_maxrss_mb": 449.17578125,
+      "realtime_factor": 8.828194981132025,
+      "seed": 20260606,
+      "speed": 1.05,
+      "steps": 15,
+      "total_end_to_end_latency_seconds": 5.584174291987438,
+      "voice": "M1",
+      "word_count": 100
+    }
+  ],
+  "script_repo_root": "/home/op/supertonic-express",
+  "target_repo_root": "/home/op/supertonic-express-main",
+  "warmup_records": [
+    {
+      "wall_time_seconds": 0.7444637560111005,
+      "warmup_index": 0
+    }
+  ]
+}
