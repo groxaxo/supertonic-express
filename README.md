@@ -17,6 +17,7 @@ This repository provides both a **Python implementation** (with a production-rea
 
 ### 📰 Update News
 
+- **2026.05.03** - 🎉 Added a reproducible CPU/AVX2 benchmark and Parakeet ASR validation workflow under `benchmarks/`, plus Linux physical-core thread tuning and voice style caching for the Python ONNX Runtime path. On an i7-4790, the validated CPU path improved from **8.441x** to **9.527x** average real-time generation (**+12.867%**).
 - **2026.02.22** - 🎉 **Smart Text Chunking** added! Automatic sentence-based splitting prevents OOM errors and enables unlimited-length audio generation
 - **2026.02.22** - 🎉 **Improved Streaming**: Chunk-by-chunk audio streaming reduces time-to-first-byte for long texts. Default format changed to **Opus** (WhatsApp-compatible, 64k Ogg)
 - **2026.01.13** - 🎉 Migrated to use **onnx-community/Supertonic-TTS-2-ONNX** model with Transformers tokenizer for improved compatibility
@@ -29,6 +30,7 @@ This repository provides both a **Python implementation** (with a production-rea
 - [Why Supertonic?](#why-supertonic)
 - [Language Support](#language-support)
 - [Getting Started](#getting-started)
+- [Benchmarking & Validation](#benchmarking--validation)
 - [Performance](#performance)
 - [Built with Supertonic](#built-with-supertonic)
 - [Citation](#citation)
@@ -213,6 +215,8 @@ For deployment without a GPU, use the CPU-optimized launch script. Performance i
 ./scripts/run_server_cpu.sh
 ```
 
+For the Python ONNX Runtime implementation on Linux, CPU execution now prefers **physical cores** by default to avoid SMT oversubscription. You can still override threading with `ORT_INTRA_OP_NUM_THREADS`, `OMP_NUM_THREADS`, `ORT_INTER_OP_NUM_THREADS`, and `ORT_EXECUTION_MODE`.
+
 ### JavaScript/Node.js Usage
 
 The JavaScript implementation uses Transformers.js and includes Intel CPU optimizations:
@@ -249,6 +253,75 @@ See [js/README.md](js/README.md) for detailed documentation and optimization gui
 - **Tokenizer**: Hugging Face Transformers AutoTokenizer
 - **Batch Processing**: Supports batch inference for improved throughput
 - **Audio Output**: Outputs 16-bit WAV files at 44.1kHz sample rate
+
+## Benchmarking & Validation
+
+This repository now includes a reproducible benchmark and transcription-validation toolkit in `benchmarks/`:
+
+- `benchmarks/tts_benchmark.py` generates baseline or optimized WAVs, captures per-component ONNX timings, and saves JSON/profile artifacts.
+- `benchmarks/asr_validate.py` validates generated WAVs against an OpenAI-compatible Parakeet ASR server and records WER/CER metrics.
+- `benchmarks/report.py` builds a Markdown comparison report from the saved benchmark and ASR artifacts.
+
+### Validated CPU/AVX2 Result (May 2026)
+
+Measured on an **Intel Core i7-4790** with AVX2 and ONNX Runtime CPU execution:
+
+- Baseline average real-time factor: **8.441x**
+- Optimized average real-time factor: **9.527x**
+- Speedup: **12.867%**
+- Largest bottleneck: `latent_denoiser`
+- Accuracy check: all baseline and optimized samples passed Parakeet ASR validation
+
+The kept Python-side optimization is intentionally small and API-safe: Linux CPU execution now defaults to physical cores, and per-voice style tensors are cached per loaded model instance.
+
+### Reproduce the Benchmark
+
+```bash
+uv venv .venv-bench-cpu --python python3.11
+. .venv-bench-cpu/bin/activate
+uv pip install -r py/requirements.txt -e py
+
+python benchmarks/tts_benchmark.py \
+  --label baseline \
+  --device cpu \
+  --output-dir benchmarks/baseline \
+  --results benchmarks/results_baseline.json \
+  --profile-out benchmarks/profile_baseline.txt
+
+python benchmarks/tts_benchmark.py \
+  --label optimized \
+  --device cpu \
+  --output-dir benchmarks/optimized \
+  --results benchmarks/results_optimized.json \
+  --profile-out benchmarks/profile_optimized.txt
+
+SERVER_URL=http://127.0.0.1:5092/v1/audio/transcriptions \
+python benchmarks/asr_validate.py \
+  --baseline-results benchmarks/results_baseline.json \
+  --optimized-results benchmarks/results_optimized.json \
+  --output benchmarks/asr_validation.json
+
+python benchmarks/report.py \
+  --baseline-results benchmarks/results_baseline.json \
+  --optimized-results benchmarks/results_optimized.json \
+  --asr-results benchmarks/asr_validation.json \
+  --output benchmarks/comparison.md
+```
+
+`benchmarks/asr_validate.py` will auto-detect the ASR endpoint from supported environment variables such as `PARAKEET_ASR_BASE_URL`, `ASR_BASE_URL`, `OPENAI_BASE_URL`, or `SERVER_URL`, and it normalizes values that already point at `/audio/transcriptions`.
+
+Generated artifacts include:
+
+- `benchmarks/baseline/*.wav`
+- `benchmarks/optimized/*.wav`
+- `benchmarks/results_baseline.json`
+- `benchmarks/results_optimized.json`
+- `benchmarks/asr_validation.json`
+- `benchmarks/profile_baseline.txt`
+- `benchmarks/profile_optimized.txt`
+- `benchmarks/comparison.md`
+
+On older GPUs, verify CUDA kernel compatibility before treating GPU benchmark output as valid. In our May 2026 validation on a GTX 750 Ti, ONNX Runtime CUDA provider loading succeeded but execution failed with `cudaErrorNoKernelImageForDevice`, so the accepted benchmark path for that host was CPU/AVX2.
 
 ## Performance
 

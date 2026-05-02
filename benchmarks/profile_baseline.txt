@@ -1,0 +1,28 @@
+Supertonic TTS benchmark profile
+
+Aggregate component timings:
+- latent_denoiser: 8.835784s (135 calls, avg 0.065450s)
+- voice_decoder: 2.195777s (9 calls, avg 0.243975s)
+- text_encoder: 0.312312s (9 calls, avg 0.034701s)
+
+Per-sample component timings:
+word_count=10 path=benchmarks/baseline/010_words.wav
+  - latent_denoiser: 0.557879s (15 calls)
+  - voice_decoder: 0.128992s (1 calls)
+  - text_encoder: 0.029084s (1 calls)
+word_count=20 path=benchmarks/baseline/020_words.wav
+  - latent_denoiser: 0.814383s (15 calls)
+  - voice_decoder: 0.185854s (1 calls)
+  - text_encoder: 0.032487s (1 calls)
+word_count=30 path=benchmarks/baseline/030_words.wav
+  - latent_denoiser: 1.130407s (15 calls)
+  - voice_decoder: 0.325314s (1 calls)
+  - text_encoder: 0.034988s (1 calls)
+word_count=50 path=benchmarks/baseline/050_words.wav
+  - latent_denoiser: 2.064710s (30 calls)
+  - voice_decoder: 0.498835s (2 calls)
+  - text_encoder: 0.065974s (2 calls)
+word_count=100 path=benchmarks/baseline/100_words.wav
+  - latent_denoiser: 4.268405s (60 calls)
+  - voice_decoder: 1.056782s (4 calls)
+  - text_encoder: 0.149779s (4 calls)

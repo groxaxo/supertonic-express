@@ -1,0 +1,191 @@
+{
+  "baseline": [
+    {
+      "audio_path": "benchmarks/baseline/010_words.wav",
+      "error": null,
+      "input_text": "Fast speech generation must stay clear, natural, stable, and measurable.",
+      "label": "baseline",
+      "metrics": {
+        "cer": 0.0,
+        "character_level_similarity": 1.0,
+        "flag": null,
+        "hypothesis_normalized": "fast speech generation must stay clear natural stable and measurable",
+        "pass": true,
+        "reference_normalized": "fast speech generation must stay clear natural stable and measurable",
+        "token_level_similarity": 1.0,
+        "wer": 0.0
+      },
+      "transcript": "Fast speech generation must stay clear, natural, stable, and measurable.",
+      "word_count": 10
+    },
+    {
+      "audio_path": "benchmarks/baseline/020_words.wav",
+      "error": null,
+      "input_text": "This benchmark checks whether the audio model can generate short responses quickly while preserving pronunciation, rhythm, and clarity.",
+      "label": "baseline",
+      "metrics": {
+        "cer": 0.0,
+        "character_level_similarity": 1.0,
+        "flag": null,
+        "hypothesis_normalized": "this benchmark checks whether the audio model can generate short responses quickly while preserving pronunciation rhythm and clarity",
+        "pass": true,
+        "reference_normalized": "this benchmark checks whether the audio model can generate short responses quickly while preserving pronunciation rhythm and clarity",
+        "token_level_similarity": 1.0,
+        "wer": 0.0
+      },
+      "transcript": "This benchmark checks whether the audio model can generate short responses quickly while preserving pronunciation, rhythm, and clarity.",
+      "word_count": 20
+    },
+    {
+      "audio_path": "benchmarks/baseline/030_words.wav",
+      "error": null,
+      "input_text": "A realtime voice agent needs low latency, consistent audio quality, accurate pronunciation, and predictable performance across short and medium length replies during normal conversation.",
+      "label": "baseline",
+      "metrics": {
+        "cer": 0.02197802197802198,
+        "character_level_similarity": 0.978494623655914,
+        "flag": null,
+        "hypothesis_normalized": "a real time voice agent needs low latency consistent audio quality accurate pronunciation and predictable performance across short and medium length replies during no normal conversation",
+        "pass": true,
+        "reference_normalized": "a realtime voice agent needs low latency consistent audio quality accurate pronunciation and predictable performance across short and medium length replies during normal conversation",
+        "token_level_similarity": 0.8846153846153846,
+        "wer": 0.125
+      },
+      "transcript": "A real-time voice agent needs low latency, consistent audio quality, accurate pronunciation, and predictable performance across short and medium length replies during no normal conversation.",
+      "word_count": 30
+    },
+    {
+      "audio_path": "benchmarks/baseline/050_words.wav",
+      "error": null,
+      "input_text": "This test measures whether the text to speech system can generate a useful spoken response fast enough for an interactive voice agent. The output should sound natural, remain intelligible, avoid skipped words, and maintain stable pacing while the benchmark records latency, throughput, memory usage, and transcription accuracy.",
+      "label": "baseline",
+      "metrics": {
+        "cer": 0.0,
+        "character_level_similarity": 1.0,
+        "flag": null,
+        "hypothesis_normalized": "this test measures whether the text to speech system can generate a useful spoken response fast enough for an interactive voice agent the output should sound natural remain intelligible avoid skipped words and maintain stable pacing while the benchmark records latency throughput memory usage and transcription accuracy",
+        "pass": true,
+        "reference_normalized": "this test measures whether the text to speech system can generate a useful spoken response fast enough for an interactive voice agent the output should sound natural remain intelligible avoid skipped words and maintain stable pacing while the benchmark records latency throughput memory usage and transcription accuracy",
+        "token_level_similarity": 1.0,
+        "wer": 0.0
+      },
+      "transcript": "This test measures whether the text-to-speech system can generate a useful spoken response fast enough for an interactive voice agent. The output should sound natural, remain intelligible, avoid skipped words, and maintain stable pacing while the benchmark records latency, throughput, memory usage, and transcription accuracy.",
+      "word_count": 50
+    },
+    {
+      "audio_path": "benchmarks/baseline/100_words.wav",
+      "error": null,
+      "input_text": "This longer benchmark checks whether the optimized generation path remains stable when the assistant produces a complete spoken answer. The system should keep the model loaded, avoid unnecessary transfers between CPU and GPU, reduce repeated preprocessing work, and generate audio faster than the original implementation without damaging intelligibility. The output should preserve the meaning of the prompt, pronounce the words clearly, avoid hallucinated phrases, avoid missing clauses, and maintain a natural speaking rhythm. The final report must compare baseline and optimized generation times, realtime factors, memory usage, bottlenecks, code changes, and transcription accuracy measured with Parakeet.",
+      "label": "baseline",
+      "metrics": {
+        "cer": 0.027417027417027416,
+        "character_level_similarity": 0.9725829725829725,
+        "flag": null,
+        "hypothesis_normalized": "this longer benchmark chec whether the optimized generation path remains stable when the ascent produces a complete spoken answer the system should keep the model loaded avoid unnecessary transferen and gpu reduce repeated preprocessing work and generate audio faster than the original implementation without damaging intelligibility the output should preserve the meaning of the prompt pronounce the words clearly avoid hallucinated phrases avoid missing clauses and maintain a natural speaking rhythm the final report must compare baseline and optimized generation times real time factors memory usage bottlenecks code changes and transcription accuracy measured with parakeet",
+        "pass": true,
+        "reference_normalized": "this longer benchmark checks whether the optimized generation path remains stable when the assistant produces a complete spoken answer the system should keep the model loaded avoid unnecessary transfers between cpu and gpu reduce repeated preprocessing work and generate audio faster than the original implementation without damaging intelligibility the output should preserve the meaning of the prompt pronounce the words clearly avoid hallucinated phrases avoid missing clauses and maintain a natural speaking rhythm the final report must compare baseline and optimized generation times realtime factors memory usage bottlenecks code changes and transcription accuracy measured with parakeet",
+        "token_level_similarity": 0.9270833333333334,
+        "wer": 0.07291666666666667
+      },
+      "transcript": "This longer benchmark chec whether the optimized generation path remains stable when the ascent produces a complete spoken answer. The system should keep the model loaded, avoid unnecessary transferen and GPU, reduce repeated preprocessing work, and generate audio faster than the original implementation without damaging intelligibility. The output should preserve the meaning of the prompt, pronounce the words clearly, avoid hallucinated phrases, avoid missing clauses, and maintain a natural speaking rhythm. The final report must compare baseline and optimized generation times, real-time factors, memory usage, bottlenecks, code changes, and transcription accuracy measured with parakeet.",
+      "word_count": 100
+    }
+  ],
+  "endpoint": "http://100.85.200.51:5092/v1",
+  "endpoint_source": "env:SERVER_URL",
+  "model_used": "parakeet",
+  "models_endpoint_error": "HTTP 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>\n",
+  "models_endpoint_payload": null,
+  "optimized": [
+    {
+      "audio_path": "benchmarks/optimized/010_words.wav",
+      "error": null,
+      "input_text": "Fast speech generation must stay clear, natural, stable, and measurable.",
+      "label": "optimized",
+      "metrics": {
+        "cer": 0.0,
+        "character_level_similarity": 1.0,
+        "flag": null,
+        "hypothesis_normalized": "fast speech generation must stay clear natural stable and measurable",
+        "pass": true,
+        "reference_normalized": "fast speech generation must stay clear natural stable and measurable",
+        "token_level_similarity": 1.0,
+        "wer": 0.0
+      },
+      "transcript": "Fast speech generation must stay clear, natural, stable, and measurable.",
+      "word_count": 10
+    },
+    {
+      "audio_path": "benchmarks/optimized/020_words.wav",
+      "error": null,
+      "input_text": "This benchmark checks whether the audio model can generate short responses quickly while preserving pronunciation, rhythm, and clarity.",
+      "label": "optimized",
+      "metrics": {
+        "cer": 0.0,
+        "character_level_similarity": 1.0,
+        "flag": null,
+        "hypothesis_normalized": "this benchmark checks whether the audio model can generate short responses quickly while preserving pronunciation rhythm and clarity",
+        "pass": true,
+        "reference_normalized": "this benchmark checks whether the audio model can generate short responses quickly while preserving pronunciation rhythm and clarity",
+        "token_level_similarity": 1.0,
+        "wer": 0.0
+      },
+      "transcript": "This benchmark checks whether the audio model can generate short responses quickly while preserving pronunciation, rhythm, and clarity.",
+      "word_count": 20
+    },
+    {
+      "audio_path": "benchmarks/optimized/030_words.wav",
+      "error": null,
+      "input_text": "A realtime voice agent needs low latency, consistent audio quality, accurate pronunciation, and predictable performance across short and medium length replies during normal conversation.",
+      "label": "optimized",
+      "metrics": {
+        "cer": 0.02197802197802198,
+        "character_level_similarity": 0.978494623655914,
+        "flag": null,
+        "hypothesis_normalized": "a real time voice agent needs low latency consistent audio quality accurate pronunciation and predictable performance across short and medium length replies during no normal conversation",
+        "pass": true,
+        "reference_normalized": "a realtime voice agent needs low latency consistent audio quality accurate pronunciation and predictable performance across short and medium length replies during normal conversation",
+        "token_level_similarity": 0.8846153846153846,
+        "wer": 0.125
+      },
+      "transcript": "A real-time voice agent needs low latency, consistent audio quality, accurate pronunciation, and predictable performance across short and medium length replies during no normal conversation.",
+      "word_count": 30
+    },
+    {
+      "audio_path": "benchmarks/optimized/050_words.wav",
+      "error": null,
+      "input_text": "This test measures whether the text to speech system can generate a useful spoken response fast enough for an interactive voice agent. The output should sound natural, remain intelligible, avoid skipped words, and maintain stable pacing while the benchmark records latency, throughput, memory usage, and transcription accuracy.",
+      "label": "optimized",
+      "metrics": {
+        "cer": 0.0,
+        "character_level_similarity": 1.0,
+        "flag": null,
+        "hypothesis_normalized": "this test measures whether the text to speech system can generate a useful spoken response fast enough for an interactive voice agent the output should sound natural remain intelligible avoid skipped words and maintain stable pacing while the benchmark records latency throughput memory usage and transcription accuracy",
+        "pass": true,
+        "reference_normalized": "this test measures whether the text to speech system can generate a useful spoken response fast enough for an interactive voice agent the output should sound natural remain intelligible avoid skipped words and maintain stable pacing while the benchmark records latency throughput memory usage and transcription accuracy",
+        "token_level_similarity": 1.0,
+        "wer": 0.0
+      },
+      "transcript": "This test measures whether the text-to-speech system can generate a useful spoken response fast enough for an interactive voice agent. The output should sound natural, remain intelligible, avoid skipped words, and maintain stable pacing while the benchmark records latency, throughput, memory usage, and transcription accuracy.",
+      "word_count": 50
+    },
+    {
+      "audio_path": "benchmarks/optimized/100_words.wav",
+      "error": null,
+      "input_text": "This longer benchmark checks whether the optimized generation path remains stable when the assistant produces a complete spoken answer. The system should keep the model loaded, avoid unnecessary transfers between CPU and GPU, reduce repeated preprocessing work, and generate audio faster than the original implementation without damaging intelligibility. The output should preserve the meaning of the prompt, pronounce the words clearly, avoid hallucinated phrases, avoid missing clauses, and maintain a natural speaking rhythm. The final report must compare baseline and optimized generation times, realtime factors, memory usage, bottlenecks, code changes, and transcription accuracy measured with Parakeet.",
+      "label": "optimized",
+      "metrics": {
+        "cer": 0.011544011544011544,
+        "character_level_similarity": 0.9884559884559885,
+        "flag": null,
+        "hypothesis_normalized": "this longer benchmark chec whether the optimized generation path remains stable when the ascent produces a complete spoken answer the system should keep the model loaded avoid unnecessary transfers between cpu and gpu reduce repeated preprocessing work and generate audio faster than the original implementation without damaging intelligibility the output should preserve the meaning of the prompt pronounce the words clearly avoid hallucinated phrases avoid missing clauses and maintain a natural speaking rhythm the final report must compare baseline and optimized generation times real time factors memory usage bottlenecks code changes and transcription accuracy measured with parakeet",
+        "pass": true,
+        "reference_normalized": "this longer benchmark checks whether the optimized generation path remains stable when the assistant produces a complete spoken answer the system should keep the model loaded avoid unnecessary transfers between cpu and gpu reduce repeated preprocessing work and generate audio faster than the original implementation without damaging intelligibility the output should preserve the meaning of the prompt pronounce the words clearly avoid hallucinated phrases avoid missing clauses and maintain a natural speaking rhythm the final report must compare baseline and optimized generation times realtime factors memory usage bottlenecks code changes and transcription accuracy measured with parakeet",
+        "token_level_similarity": 0.9587628865979382,
+        "wer": 0.041666666666666664
+      },
+      "transcript": "This longer benchmark chec whether the optimized generation path remains stable when the ascent produces a complete spoken answer. The system should keep the model loaded, avoid unnecessary transfers between CPU and GPU, reduce repeated preprocessing work, and generate audio faster than the original implementation without damaging intelligibility. The output should preserve the meaning of the prompt, pronounce the words clearly, avoid hallucinated phrases, avoid missing clauses, and maintain a natural speaking rhythm. The final report must compare baseline and optimized generation times, real-time factors, memory usage, bottlenecks, code changes, and transcription accuracy measured with parakeet.",
+      "word_count": 100
+    }
+  ]
+}

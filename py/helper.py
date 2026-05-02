@@ -39,9 +39,47 @@ class SupertonicTTS:
 
     @classmethod
     def _recommended_cpu_threads(cls) -> int:
-        """Match the JS default: use ~75% of available CPU cores."""
+        """Prefer physical cores to avoid SMT oversubscription in ONNX Runtime."""
+        physical_cores = cls._linux_physical_cpu_cores()
+        if physical_cores is not None:
+            return physical_cores
+
         cpu_count = os.cpu_count() or 1
         return max(1, int(np.ceil(cpu_count * 0.75)))
+
+    @staticmethod
+    def _linux_physical_cpu_cores() -> Optional[int]:
+        """Return physical CPU core count from /proc/cpuinfo when available."""
+        cpuinfo_path = "/proc/cpuinfo"
+        if not os.path.exists(cpuinfo_path):
+            return None
+
+        core_pairs: set[tuple[str, str]] = set()
+        physical_id: Optional[str] = None
+        core_id: Optional[str] = None
+
+        try:
+            with open(cpuinfo_path, "r", encoding="utf-8", errors="ignore") as cpuinfo:
+                for raw_line in cpuinfo:
+                    line = raw_line.strip()
+                    if not line:
+                        if physical_id is not None and core_id is not None:
+                            core_pairs.add((physical_id, core_id))
+                        physical_id = None
+                        core_id = None
+                        continue
+
+                    if line.startswith("physical id"):
+                        physical_id = line.split(":", 1)[1].strip()
+                    elif line.startswith("core id"):
+                        core_id = line.split(":", 1)[1].strip()
+
+            if physical_id is not None and core_id is not None:
+                core_pairs.add((physical_id, core_id))
+        except OSError:
+            return None
+
+        return len(core_pairs) if core_pairs else None
 
     @classmethod
     def _create_session_options(cls, use_gpu: bool) -> ort.SessionOptions:
@@ -81,6 +119,7 @@ class SupertonicTTS:
         self.sample_rate = self.SAMPLE_RATE
         self.use_gpu = use_gpu
         self.device = "cuda" if use_gpu else "cpu"
+        self._style_cache: dict[str, np.ndarray] = {}
         
         # Initialize tokenizer with error handling
         try:
@@ -133,10 +172,15 @@ class SupertonicTTS:
         if not os.path.exists(voice_path):
             raise ValueError(f"Voice '{voice}' not found at {voice_path}.")
 
+        if voice in self._style_cache:
+            return self._style_cache[voice]
+
         style_vec = np.fromfile(voice_path, dtype=np.float32)
         
         # Reshape to (1, -1, STYLE_DIM) where -1 infers the middle dimension
-        return style_vec.reshape(1, -1, self.STYLE_DIM)
+        style = style_vec.reshape(1, -1, self.STYLE_DIM)
+        self._style_cache[voice] = style
+        return style
 
     def _to_ort(self, arr: np.ndarray) -> ort.OrtValue:
         """Convert numpy array to OrtValue on the configured device."""
@@ -343,6 +387,7 @@ class SupertonicTTS:
         
         wav_list = []
         total_duration = 0.0
+        silence = np.zeros(int(0.3 * self.SAMPLE_RATE), dtype=np.float32)
         
         for chunk in text_chunks:
             results = self.generate(
@@ -355,9 +400,7 @@ class SupertonicTTS:
             wav_list.append(results[0])
             total_duration += len(results[0]) / self.SAMPLE_RATE
             
-            # Add silence between chunks
             if len(text_chunks) > 1:
-                silence = np.zeros(int(0.3 * self.SAMPLE_RATE), dtype=np.float32)
                 wav_list.append(silence)
                 total_duration += 0.3
         
