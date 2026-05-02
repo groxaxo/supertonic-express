@@ -15,8 +15,21 @@
 
 This repository provides both a **Python implementation** (with a production-ready FastAPI server) and a **JavaScript/Node.js implementation**, using the optimized ONNX model from [onnx-community/Supertonic-TTS-2-ONNX](https://huggingface.co/onnx-community/Supertonic-TTS-2-ONNX).
 
+### Frontpage Update
+
+The current `main` branch now carries the **fastest validated CPU build** in this repository.
+
+- **Validated host:** Intel Core i7-4790 with AVX2
+- **Current `main` average real-time factor:** **9.774x**
+- **Previous mainline average real-time factor:** **8.392x**
+- **Measured improvement vs previous mainline:** **+16.475%** average real-time factor, **15.297%** lower total generation time
+- **Key upgrades now on `main`:** Linux physical-core ONNX Runtime thread selection, per-voice style caching, reproducible benchmark tooling, Parakeet ASR validation support, and side-by-side branch comparison artifacts
+
+See `benchmarks/comparison.md` for the branch baseline/optimized report and `benchmarks/side_by_side_main_vs_perf/comparison.md` for the direct previous-main vs current-main comparison.
+
 ### 📰 Update News
 
+- **2026.05.03** - 🎉 Promoted the fastest validated branch to **`main`** and added a direct side-by-side comparison against the previous mainline. Current `main` is **9.774x** real-time on the i7-4790 AVX2 host, a **16.475%** improvement over the prior mainline.
 - **2026.05.03** - 🎉 Added a reproducible CPU/AVX2 benchmark and Parakeet ASR validation workflow under `benchmarks/`, plus Linux physical-core thread tuning and voice style caching for the Python ONNX Runtime path. On an i7-4790, the validated CPU path improved from **8.441x** to **9.527x** average real-time generation (**+12.867%**).
 - **2026.02.22** - 🎉 **Smart Text Chunking** added! Automatic sentence-based splitting prevents OOM errors and enables unlimited-length audio generation
 - **2026.02.22** - 🎉 **Improved Streaming**: Chunk-by-chunk audio streaming reduces time-to-first-byte for long texts. Default format changed to **Opus** (WhatsApp-compatible, 64k Ogg)
