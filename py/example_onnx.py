@@ -13,6 +13,18 @@ def parse_args():
     parser.add_argument(
         "--use-gpu", action="store_true", help="Use GPU for inference (default: CPU)"
     )
+    parser.add_argument(
+        "--backend",
+        choices=["cpu", "cuda", "openvino"],
+        default=None,
+        help="ONNX Runtime backend override. --use-gpu remains an alias for CUDA.",
+    )
+    parser.add_argument(
+        "--openvino-device",
+        choices=["CPU", "GPU", "AUTO"],
+        default=None,
+        help="OpenVINO device to use when --backend openvino is selected.",
+    )
 
     # Model settings
     parser.add_argument(
@@ -89,7 +101,9 @@ assert len(voice_style_names) == len(
 bsz = len(voice_style_names)
 
 # --- 2. Load Text to Speech --- #
-text_to_speech = load_text_to_speech(args.onnx_dir, args.use_gpu)
+if args.openvino_device:
+    os.environ["OPENVINO_DEVICE"] = args.openvino_device
+text_to_speech = load_text_to_speech(args.onnx_dir, args.use_gpu, args.backend)
 
 # --- 3. Use the first voice for all (new model uses voice name directly) --- #
 voice = voice_style_names[0]

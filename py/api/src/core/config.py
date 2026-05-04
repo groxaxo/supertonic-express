@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     onnx_dir: str = os.getenv("ONNX_DIR", "assets")
     voice_styles_dir: str = os.getenv("VOICE_STYLES_DIR", "assets/voices")
     use_gpu: bool = os.getenv("USE_GPU", "false").lower() == "true"
+    ort_backend: str = os.getenv("SUPERTONIC_ORT_BACKEND", "cuda" if use_gpu else "cpu")
+    openvino_device: str = os.getenv("OPENVINO_DEVICE", "GPU")
     
     # TTS Settings
     default_speed: float = 1.05

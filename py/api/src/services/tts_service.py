@@ -55,7 +55,12 @@ class TTSService:
 
     def _load_model(self):
         """Load the ONNX model (sync)"""
-        self.tts_model = load_text_to_speech(settings.onnx_dir, settings.use_gpu)
+        os.environ["OPENVINO_DEVICE"] = settings.openvino_device
+        self.tts_model = load_text_to_speech(
+            settings.onnx_dir,
+            settings.use_gpu,
+            settings.ort_backend,
+        )
 
     async def get_available_voices(self) -> list[str]:
         """Get list of available voice styles"""

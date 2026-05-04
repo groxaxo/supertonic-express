@@ -82,12 +82,19 @@ class SupertonicTTS:
         return len(core_pairs) if core_pairs else None
 
     @classmethod
-    def _create_session_options(cls, use_gpu: bool) -> ort.SessionOptions:
+    def _create_session_options(
+        cls,
+        backend: str = "cpu",
+        use_gpu: Optional[bool] = None,
+    ) -> ort.SessionOptions:
         """Create ONNX Runtime session options tuned for CPU execution."""
+        if use_gpu is not None:
+            backend = "cuda" if use_gpu else "cpu"
+
         sess_options = ort.SessionOptions()
         sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 
-        if use_gpu:
+        if backend in {"cuda", "openvino"}:
             return sess_options
 
         intra_threads = (
@@ -107,7 +114,32 @@ class SupertonicTTS:
 
         return sess_options
 
-    def __init__(self, model_path: str, use_gpu: bool = False):
+    @staticmethod
+    def _normalize_backend(use_gpu: bool, backend: Optional[str]) -> str:
+        """Resolve the requested ONNX Runtime backend."""
+        if backend is None:
+            backend = os.getenv("SUPERTONIC_ORT_BACKEND")
+        if backend is None:
+            backend = "cuda" if use_gpu else "cpu"
+
+        normalized = backend.strip().lower()
+        if normalized in {"gpu", "cuda"}:
+            return "cuda"
+        if normalized in {"ov", "openvino"}:
+            return "openvino"
+        return "cpu"
+
+    @staticmethod
+    def _openvino_device() -> str:
+        """Return the requested OpenVINO device name."""
+        return os.getenv("OPENVINO_DEVICE", "GPU").strip().upper() or "GPU"
+
+    def __init__(
+        self,
+        model_path: str,
+        use_gpu: bool = False,
+        backend: Optional[str] = None,
+    ):
         """
         Initialize SupertonicTTS model.
         
@@ -117,8 +149,9 @@ class SupertonicTTS:
         """
         self.model_path = model_path
         self.sample_rate = self.SAMPLE_RATE
-        self.use_gpu = use_gpu
-        self.device = "cuda" if use_gpu else "cpu"
+        self.backend = self._normalize_backend(use_gpu, backend)
+        self.use_gpu = self.backend == "cuda"
+        self.device = "cuda" if self.use_gpu else "cpu"
         self._style_cache: dict[str, np.ndarray] = {}
         
         # Initialize tokenizer with error handling
@@ -132,16 +165,23 @@ class SupertonicTTS:
             )
 
         # Set up ONNX Runtime providers
-        if use_gpu:
+        if self.backend == "cuda":
             providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
-            print("Using GPU for inference (if available)")
+            print("Using CUDA GPU for inference (if available)")
+        elif self.backend == "openvino":
+            openvino_device = self._openvino_device()
+            providers = [
+                ("OpenVINOExecutionProvider", {"device_type": openvino_device}),
+                "CPUExecutionProvider",
+            ]
+            print(f"Using OpenVINO for inference on {openvino_device}")
         else:
             providers = ["CPUExecutionProvider"]
             print("Using CPU for inference")
 
         # Load ONNX sessions
         onnx_dir = os.path.join(self.model_path, "onnx")
-        sess_options = self._create_session_options(use_gpu)
+        sess_options = self._create_session_options(self.backend)
         self.text_encoder = ort.InferenceSession(
             os.path.join(onnx_dir, "text_encoder.onnx"),
             sess_options=sess_options,
@@ -466,18 +506,23 @@ class SupertonicTTS:
 
 # Backwards compatibility functions for the API
 
-def load_text_to_speech(model_path: str, use_gpu: bool = False) -> SupertonicTTS:
+def load_text_to_speech(
+    model_path: str,
+    use_gpu: bool = False,
+    backend: Optional[str] = None,
+) -> SupertonicTTS:
     """
     Load the text-to-speech model.
     
     Args:
         model_path: Path to model directory
-        use_gpu: Whether to use GPU
+        use_gpu: Whether to use CUDA GPU
+        backend: Optional backend override: cpu, cuda, or openvino
         
     Returns:
         SupertonicTTS instance
     """
-    return SupertonicTTS(model_path, use_gpu)
+    return SupertonicTTS(model_path, use_gpu, backend=backend)
 
 
 def load_voice_style(voice_paths: list[str], verbose: bool = False) -> str:
@@ -508,8 +553,8 @@ class Style:
 
 class TextToSpeech:
     """Wrapper class for backwards compatibility."""
-    def __init__(self, model_path: str, use_gpu: bool = False):
-        self.tts = SupertonicTTS(model_path, use_gpu)
+    def __init__(self, model_path: str, use_gpu: bool = False, backend: Optional[str] = None):
+        self.tts = SupertonicTTS(model_path, use_gpu, backend=backend)
         self.sample_rate = self.tts.sample_rate
     
     def __call__(self, text: str, lang: str, style, total_step: int, speed: float = 1.0):

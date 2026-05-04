@@ -40,6 +40,8 @@ async def lifespan(app: FastAPI):
     logger.info(f"ONNX directory: {settings.onnx_dir}")
     logger.info(f"Voice styles directory: {settings.voice_styles_dir}")
     logger.info(f"Using GPU: {settings.use_gpu}")
+    logger.info(f"ONNX Runtime backend: {settings.ort_backend}")
+    logger.info(f"OpenVINO device: {settings.openvino_device}")
     
     # Initialize TTS service
     try:
