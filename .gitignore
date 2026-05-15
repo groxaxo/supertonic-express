@@ -61,3 +61,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 logs/
+
+# Runtime
+supertonic-server.log
+supertonic-server.pid

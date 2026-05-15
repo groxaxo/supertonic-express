@@ -1,0 +1,307 @@
+{
+  "aggregate_component_profile": [
+    {
+      "average_seconds": 0.26913764802739026,
+      "component": "latent_denoiser",
+      "count": 135,
+      "time_seconds": 36.33358248369768
+    },
+    {
+      "average_seconds": 1.0812211761302832,
+      "component": "voice_decoder",
+      "count": 9,
+      "time_seconds": 9.730990585172549
+    },
+    {
+      "average_seconds": 0.2426600695794655,
+      "component": "text_encoder",
+      "count": 9,
+      "time_seconds": 2.1839406262151897
+    }
+  ],
+  "created_at_unix": 1778812784.96057,
+  "device": "cpu",
+  "environment": {
+    "branch": "main",
+    "command": "benchmarks/tts_benchmark.py --label local-optimized --device cpu --output-dir benchmarks/local-optimized --results benchmarks/local-results/results_optimized.json --profile-out benchmarks/local-results/profile_optimized.txt --warmup-runs 1 --steps 15 --speed 1.05 --voice M1 --seed 20260502",
+    "commit_hash": "c472b58e9de2de9f9b0beeec1b7a2829f2f96c64",
+    "cpu_count": 4,
+    "cpu_flags_contains_avx2": true,
+    "cpu_model": "Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz",
+    "cuda_version_from_nvidia_smi": null,
+    "driver_version_from_nvidia_smi": null,
+    "gpu_query": null,
+    "librosa_version": "0.11.0",
+    "machine": "x86_64",
+    "nvidia_smi": null,
+    "onnxruntime_version": "1.23.1",
+    "os": "Linux-6.8.0-111-generic-x86_64-with-glibc2.39",
+    "package_manager": "uv",
+    "python": "3.12.3",
+    "python_executable": null,
+    "pytorch_version": null,
+    "ram": "total        used        free      shared  buff/cache   available\nMem:            31Gi        11Gi       849Mi       970Mi        21Gi        19Gi\nSwap:           15Gi          0B        15Gi",
+    "repo_root": "/home/op/supertonic-express",
+    "soundfile_version": "0.13.1",
+    "transformers_version": "5.8.0"
+  },
+  "label": "local-optimized",
+  "model_load_time_seconds": 1.5612775740446523,
+  "onnx_dir": "/home/op/supertonic-express/assets",
+  "providers": {
+    "latent_denoiser": [
+      "CPUExecutionProvider"
+    ],
+    "text_encoder": [
+      "CPUExecutionProvider"
+    ],
+    "voice_decoder": [
+      "CPUExecutionProvider"
+    ]
+  },
+  "records": [
+    {
+      "audio_duration_seconds": 5.294149659863946,
+      "audio_write_time_seconds": 0.02365803299471736,
+      "average_gpu_utilization_percent": null,
+      "component_profile": [
+        {
+          "average_seconds": 0.15901229886803775,
+          "component": "latent_denoiser",
+          "count": 15,
+          "time_seconds": 2.3851844830205664
+        },
+        {
+          "average_seconds": 0.6701271299971268,
+          "component": "voice_decoder",
+          "count": 1,
+          "time_seconds": 0.6701271299971268
+        },
+        {
+          "average_seconds": 0.12448907503858209,
+          "component": "text_encoder",
+          "count": 1,
+          "time_seconds": 0.12448907503858209
+        }
+      ],
+      "cpu_utilization_percent_estimate": 94.55990157466888,
+      "device": "cpu",
+      "first_audio_latency_seconds": null,
+      "generation_wall_time_seconds": 3.18983329704497,
+      "gpu_sample_count": 0,
+      "input_text": "Fast speech generation must stay clear, natural, stable, and measurable.",
+      "inverse_realtime_factor": 0.6025204238610333,
+      "label": "local-optimized",
+      "language": "en",
+      "model_load_time_seconds": 1.5612775740446523,
+      "output_path": "benchmarks/local-optimized/010_words.wav",
+      "peak_vram_mb": null,
+      "process_cpu_time_seconds": 12.155154798999998,
+      "process_maxrss_delta_mb": 11.43359375,
+      "process_maxrss_mb": 388.10546875,
+      "realtime_factor": 1.659694776140306,
+      "seed": 20260602,
+      "speed": 1.05,
+      "steps": 15,
+      "total_end_to_end_latency_seconds": 3.2134913300396875,
+      "voice": "M1",
+      "word_count": 10
+    },
+    {
+      "audio_duration_seconds": 8.777142857142858,
+      "audio_write_time_seconds": 0.037065610056743026,
+      "average_gpu_utilization_percent": null,
+      "component_profile": [
+        {
+          "average_seconds": 0.2427637982647866,
+          "component": "latent_denoiser",
+          "count": 15,
+          "time_seconds": 3.641456973971799
+        },
+        {
+          "average_seconds": 0.833302624989301,
+          "component": "voice_decoder",
+          "count": 1,
+          "time_seconds": 0.833302624989301
+        },
+        {
+          "average_seconds": 0.2765269139781594,
+          "component": "text_encoder",
+          "count": 1,
+          "time_seconds": 0.2765269139781594
+        }
+      ],
+      "cpu_utilization_percent_estimate": 90.90221891739536,
+      "device": "cpu",
+      "first_audio_latency_seconds": null,
+      "generation_wall_time_seconds": 4.766042988980189,
+      "gpu_sample_count": 0,
+      "input_text": "This benchmark checks whether the audio model can generate short responses quickly while preserving pronunciation, rhythm, and clarity.",
+      "inverse_realtime_factor": 0.5430061999163627,
+      "label": "local-optimized",
+      "language": "en",
+      "model_load_time_seconds": 1.5612775740446523,
+      "output_path": "benchmarks/local-optimized/020_words.wav",
+      "peak_vram_mb": null,
+      "process_cpu_time_seconds": 17.464929751,
+      "process_maxrss_delta_mb": 8.125,
+      "process_maxrss_mb": 396.35546875,
+      "realtime_factor": 1.8415995989622707,
+      "seed": 20260603,
+      "speed": 1.05,
+      "steps": 15,
+      "total_end_to_end_latency_seconds": 4.803108599036932,
+      "voice": "M1",
+      "word_count": 20
+    },
+    {
+      "audio_duration_seconds": 13.165714285714285,
+      "audio_write_time_seconds": 0.04710210603661835,
+      "average_gpu_utilization_percent": null,
+      "component_profile": [
+        {
+          "average_seconds": 0.2894022939959541,
+          "component": "latent_denoiser",
+          "count": 15,
+          "time_seconds": 4.3410344099393114
+        },
+        {
+          "average_seconds": 1.3122192870359868,
+          "component": "voice_decoder",
+          "count": 1,
+          "time_seconds": 1.3122192870359868
+        },
+        {
+          "average_seconds": 0.33650848700199276,
+          "component": "text_encoder",
+          "count": 1,
+          "time_seconds": 0.33650848700199276
+        }
+      ],
+      "cpu_utilization_percent_estimate": 91.75897615683435,
+      "device": "cpu",
+      "first_audio_latency_seconds": null,
+      "generation_wall_time_seconds": 6.0058070219820365,
+      "gpu_sample_count": 0,
+      "input_text": "A realtime voice agent needs low latency, consistent audio quality, accurate pronunciation, and predictable performance across short and medium length replies during normal conversation.",
+      "inverse_realtime_factor": 0.4561702382147814,
+      "label": "local-optimized",
+      "language": "en",
+      "model_load_time_seconds": 1.5612775740446523,
+      "output_path": "benchmarks/local-optimized/030_words.wav",
+      "peak_vram_mb": null,
+      "process_cpu_time_seconds": 22.216745351,
+      "process_maxrss_delta_mb": 17.75,
+      "process_maxrss_mb": 414.10546875,
+      "realtime_factor": 2.1921640568080285,
+      "seed": 20260604,
+      "speed": 1.05,
+      "steps": 15,
+      "total_end_to_end_latency_seconds": 6.052909128018655,
+      "voice": "M1",
+      "word_count": 30
+    },
+    {
+      "audio_duration_seconds": 22.751836734693878,
+      "audio_write_time_seconds": 0.05853703699540347,
+      "average_gpu_utilization_percent": null,
+      "component_profile": [
+        {
+          "average_seconds": 0.28890954159433024,
+          "component": "latent_denoiser",
+          "count": 30,
+          "time_seconds": 8.667286247829907
+        },
+        {
+          "average_seconds": 1.06045400100993,
+          "component": "voice_decoder",
+          "count": 2,
+          "time_seconds": 2.12090800201986
+        },
+        {
+          "average_seconds": 0.21424924756865948,
+          "component": "text_encoder",
+          "count": 2,
+          "time_seconds": 0.42849849513731897
+        }
+      ],
+      "cpu_utilization_percent_estimate": 91.3057208186097,
+      "device": "cpu",
+      "first_audio_latency_seconds": null,
+      "generation_wall_time_seconds": 11.242475382983685,
+      "gpu_sample_count": 0,
+      "input_text": "This test measures whether the text to speech system can generate a useful spoken response fast enough for an interactive voice agent. The output should sound natural, remain intelligible, avoid skipped words, and maintain stable pacing while the benchmark records latency, throughput, memory usage, and transcription accuracy.",
+      "inverse_realtime_factor": 0.49413484784022865,
+      "label": "local-optimized",
+      "language": "en",
+      "model_load_time_seconds": 1.5612775740446523,
+      "output_path": "benchmarks/local-optimized/050_words.wav",
+      "peak_vram_mb": null,
+      "process_cpu_time_seconds": 41.274286466999996,
+      "process_maxrss_delta_mb": 18.5,
+      "process_maxrss_mb": 432.60546875,
+      "realtime_factor": 2.0237390752156292,
+      "seed": 20260605,
+      "speed": 1.05,
+      "steps": 15,
+      "total_end_to_end_latency_seconds": 11.301012419979088,
+      "voice": "M1",
+      "word_count": 50
+    },
+    {
+      "audio_duration_seconds": 48.986666666666665,
+      "audio_write_time_seconds": 0.11364635499194264,
+      "average_gpu_utilization_percent": null,
+      "component_profile": [
+        {
+          "average_seconds": 0.2883103394822683,
+          "component": "latent_denoiser",
+          "count": 60,
+          "time_seconds": 17.2986203689361
+        },
+        {
+          "average_seconds": 1.1986083852825686,
+          "component": "voice_decoder",
+          "count": 4,
+          "time_seconds": 4.7944335411302745
+        },
+        {
+          "average_seconds": 0.2544794137647841,
+          "component": "text_encoder",
+          "count": 4,
+          "time_seconds": 1.0179176550591365
+        }
+      ],
+      "cpu_utilization_percent_estimate": 92.0878617494742,
+      "device": "cpu",
+      "first_audio_latency_seconds": null,
+      "generation_wall_time_seconds": 23.150828127050772,
+      "gpu_sample_count": 0,
+      "input_text": "This longer benchmark checks whether the optimized generation path remains stable when the assistant produces a complete spoken answer. The system should keep the model loaded, avoid unnecessary transfers between CPU and GPU, reduce repeated preprocessing work, and generate audio faster than the original implementation without damaging intelligibility. The output should preserve the meaning of the prompt, pronounce the words clearly, avoid hallucinated phrases, avoid missing clauses, and maintain a natural speaking rhythm. The final report must compare baseline and optimized generation times, realtime factors, memory usage, bottlenecks, code changes, and transcription accuracy measured with Parakeet.",
+      "inverse_realtime_factor": 0.4725944772805683,
+      "label": "local-optimized",
+      "language": "en",
+      "model_load_time_seconds": 1.5612775740446523,
+      "output_path": "benchmarks/local-optimized/100_words.wav",
+      "peak_vram_mb": null,
+      "process_cpu_time_seconds": 85.695432793,
+      "process_maxrss_delta_mb": 13.93359375,
+      "process_maxrss_mb": 446.5390625,
+      "realtime_factor": 2.1159790223412265,
+      "seed": 20260606,
+      "speed": 1.05,
+      "steps": 15,
+      "total_end_to_end_latency_seconds": 23.264474482042715,
+      "voice": "M1",
+      "word_count": 100
+    }
+  ],
+  "script_repo_root": "/home/op/supertonic-express",
+  "target_repo_root": "/home/op/supertonic-express",
+  "warmup_records": [
+    {
+      "wall_time_seconds": 3.432435534079559,
+      "warmup_index": 0
+    }
+  ]
+}
